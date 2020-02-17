@@ -7,8 +7,13 @@ import org.nutz.dao.entity.annotation.Table;
 
 import java.util.Date;
 
+/**
+ * 2 * @Author: Koer
+ * 3 * @Date: 2020/2/16 12:48
+ * 4
+ */
 @Table("t_user")
-public class User {
+public class User extends BasePojo{
     @Id()
     @Column("u_id")
     private int id;
@@ -17,10 +22,8 @@ public class User {
     private String name;
     @Column("u_pwd")
     private String password;
-    @Column("u_cdate")
-    private Date createTime;
-    @Column("u_udate")
-    private Date updateTime;
+    @Column("u_salt")
+    private String salt;
 
     public int getId() {
         return id;
@@ -46,19 +49,12 @@ public class User {
         this.password = password;
     }
 
-    public Date getCreateTime() {
-        return createTime;
+    public String getSalt() {
+        return salt;
     }
 
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime;
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 
-    public Date getUpdateTime(Date date) {
-        return updateTime;
-    }
-
-    public void setUpdateTime(Date updateTime) {
-        this.updateTime = updateTime;
-    }
 }

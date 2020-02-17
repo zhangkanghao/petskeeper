@@ -15,15 +15,15 @@ import org.nutz.mvc.filter.CheckSession;
 import javax.servlet.http.HttpSession;
 import java.util.Date;
 
+/**
+ * @author Koer
+ */
 @IocBean
 @At("/user")
 @Ok("json:{locked:'password',ignoreNull:true}")
 @Fail("http:500")
 @Filters(@By(type= CheckSession.class,args = {"ident","/"}))
-public class UserModule {
-
-    @Inject
-    private Dao dao;
+public class UserModule extends BaseModule{
 
 
     @At("/")
@@ -108,20 +108,30 @@ public class UserModule {
         if (msg != null) {
             return re.setv("ok", false).setv("msg", msg);
         }
-        user.setName(null);// 不允许更新用户名
-        user.setCreateTime(null);//也不允许更新创建时间
-        user.setUpdateTime(new Date());// 设置正确的更新时间
-        dao.updateIgnoreNull(user);// 真正更新的其实只有password和salt
+        // 不允许更新用户名
+        user.setName(null);
+        //也不允许更新创建时间
+        user.setCreateTime(null);
+        // 设置正确的更新时间
+        user.setUpdateTime(new Date());
+        // 真正更新的其实只有password和salt
+        dao.updateIgnoreNull(user);
         return re.setv("ok", true);
     }
 
-    //删除，@Attr是session.getAttribute()
+    /**
+     * 删除，@Attr是session.getAttribute()
+     * @param id
+     * @param me
+     * @return
+     */
     @At
     public Object delete(@Param("id") int id, @Attr("me") int me) {
         if (me == id || id < 1) {
             return new NutMap().setv("ok", false).setv("msg", "不能删除当前用户!!");
         }
-        dao.delete(User.class, id); // 再严谨一些的话,需要判断是否为>0
+        // 再严谨一些的话,需要判断是否为>0
+        dao.delete(User.class, id);
         return new NutMap().setv("ok", true);
     }
 
@@ -132,7 +142,8 @@ public class UserModule {
         qr.setList(dao.query(User.class, cnd, pager));
         pager.setRecordCount(dao.count(User.class, cnd));
         qr.setPager(pager);
-        return qr; //默认分页是第1页,每页20条
+        //默认分页是第1页,每页20条
+        return qr;
     }
 
 }
