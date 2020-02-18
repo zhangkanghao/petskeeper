@@ -1,9 +1,6 @@
 package cn.koer.petskeeper.bean;
 
-import org.nutz.dao.entity.annotation.Column;
-import org.nutz.dao.entity.annotation.Id;
-import org.nutz.dao.entity.annotation.Name;
-import org.nutz.dao.entity.annotation.Table;
+import org.nutz.dao.entity.annotation.*;
 
 import java.util.Date;
 
@@ -24,6 +21,10 @@ public class User extends BasePojo{
     private String password;
     @Column("u_salt")
     private String salt;
+
+    /**与userprofile一对一关联*/
+    @One(target=UserProfile.class, field="id", key="userId")
+    protected UserProfile profile;
 
     public int getId() {
         return id;
@@ -57,4 +58,11 @@ public class User extends BasePojo{
         this.salt = salt;
     }
 
+    public UserProfile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(UserProfile profile) {
+        this.profile = profile;
+    }
 }

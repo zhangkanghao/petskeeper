@@ -1,16 +1,20 @@
 package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.User;
+import cn.koer.petskeeper.bean.UserProfile;
+import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Dao;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
-import org.nutz.ioc.loader.annotation.Inject;
+import org.nutz.ioc.aop.Aop;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
+import org.nutz.trans.Atom;
+import org.nutz.trans.Trans;
 
 import javax.servlet.http.HttpSession;
 import java.util.Date;
@@ -24,12 +28,6 @@ import java.util.Date;
 @Fail("http:500")
 @Filters(@By(type= CheckSession.class,args = {"ident","/"}))
 public class UserModule extends BaseModule{
-
-
-    @At("/")
-    @Ok("jsp:jsp.list") // 真实路径是 /WEB-INF/jsp/user/list.jsp
-    public void index() {
-    }
 
     @At
     public int count() {
@@ -60,11 +58,13 @@ public class UserModule extends BaseModule{
             return "空对象";
         }
         if (create) {
-            if (Strings.isBlank(user.getName()) || Strings.isBlank(user.getPassword()))
+            if (Strings.isBlank(user.getName()) || Strings.isBlank(user.getPassword())) {
                 return "用户名/密码不能为空";
+            }
         } else {
-            if (Strings.isBlank(user.getPassword()))
+            if (Strings.isBlank(user.getPassword())) {
                 return "密码不能为空";
+            }
         }
         String pwd = user.getPassword().trim();
         if (pwd.length() < 6 || pwd.length() > 18) {
@@ -77,8 +77,9 @@ public class UserModule extends BaseModule{
                 return "用户名已被注册";
             }
         } else {
-            if (user.getId() < 1)
+            if (user.getId() < 1) {
                 return "用户id非法";
+            }
         }
         if (user.getName() != null) {
             user.setName(user.getName().trim());
@@ -86,7 +87,9 @@ public class UserModule extends BaseModule{
         return null;
     }
 
-    //注册
+    /**
+     * 注册
+     */
     @At
     public Object register(@Param("..") User user) {
         NutMap re = new NutMap();
@@ -100,7 +103,9 @@ public class UserModule extends BaseModule{
         return re.setv("ok", true).setv("data", user);
     }
 
-    //更新
+    /**
+     *  更新
+     */
     @At
     public Object update(@Param("..") User user) {
         NutMap re = new NutMap();
@@ -126,12 +131,14 @@ public class UserModule extends BaseModule{
      * @return
      */
     @At
-    public Object delete(@Param("id") int id, @Attr("me") int me) {
+    @Aop(TransAop.READ_COMMITTED)
+    public Object delete(@Param("id") int id, @Attr("ident") int me) {
         if (me == id || id < 1) {
             return new NutMap().setv("ok", false).setv("msg", "不能删除当前用户!!");
         }
-        // 再严谨一些的话,需要判断是否为>0
-        dao.delete(User.class, id);
+        /**再严谨一些的话,需要判断是否为>0*/
+        dao.delete(User.class,id);
+        dao.clear(UserProfile.class,Cnd.where("userId","=",me));
         return new NutMap().setv("ok", true);
     }
 
