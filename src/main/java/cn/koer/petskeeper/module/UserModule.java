@@ -29,6 +29,12 @@ import java.util.Date;
 @Filters(@By(type= CheckSession.class,args = {"ident","/"}))
 public class UserModule extends BaseModule{
 
+
+    @At("/")
+    @Ok("jsp:jsp.user.list") // 真实路径是 /WEB-INF/jsp/user/list.jsp
+    public void index() {
+    }
+
     @At
     public int count() {
         return dao.count(User.class);
@@ -88,17 +94,17 @@ public class UserModule extends BaseModule{
     }
 
     /**
-     * 注册
+     * 添加
      */
     @At
-    public Object register(@Param("..") User user) {
+    public Object add(@Param("..") User user) {
         NutMap re = new NutMap();
         String msg = checkUser(user, true);
         if (msg != null) {
             return re.setv("ok", false).setv("msg", msg);
         }
         user.setCreateTime(new Date());
-        user.getUpdateTime(new Date());
+        user.setUpdateTime(new Date());
         user = dao.insert(user);
         return re.setv("ok", true).setv("data", user);
     }
