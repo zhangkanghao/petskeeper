@@ -1,6 +1,7 @@
 package cn.koer.petskeeper;
 
 import cn.koer.petskeeper.bean.User;
+import org.apache.commons.mail.HtmlEmail;
 import org.nutz.dao.Dao;
 import org.nutz.dao.util.Daos;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;
@@ -27,7 +28,18 @@ public class MainSetup implements Setup {
             user.setUpdateTime(new Date());
             dao.insert(user);
         }
-
+        /** 测试发送邮件
+        try {
+            HtmlEmail email = ioc.get(HtmlEmail.class);
+            email.setSubject("测试NutzBook");
+            email.setMsg("This is a test mail ... :-)" + System.currentTimeMillis());
+            email.addTo("651812128@qq.com");
+            email.buildMimeMessage();
+            email.sendMimeMessage();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        */
     }
 
     @Override
