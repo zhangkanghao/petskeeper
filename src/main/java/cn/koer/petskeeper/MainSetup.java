@@ -1,7 +1,6 @@
 package cn.koer.petskeeper;
 
 import cn.koer.petskeeper.bean.User;
-import org.apache.commons.mail.HtmlEmail;
 import org.nutz.dao.Dao;
 import org.nutz.dao.util.Daos;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;

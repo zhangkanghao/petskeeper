@@ -40,7 +40,7 @@
             $("#user_profile_btn").click(function() {
                 //alert(JSON.stringify($("#user_profile").serializeObject()));
                 $.ajax({
-                    url : base + "/user/profile/update",
+                    url : "${base}/user/profile/update",
                     type : "POST",
                     data : JSON.stringify($("#user_profile").serializeObject()),
                     success : function() {
@@ -88,6 +88,25 @@
         <div>
             邮箱验证状态:<c:out value="${obj.emailChecked}"></c:out><p />
         </div>
+        <c:if test="${!obj.emailChecked}">
+            <script type="text/javascript">
+                function send_email_check() {
+                    $.ajax({
+                        url : "${base}/user/profile/active/mail",
+                        type : "POST",
+                        dataType : "json",
+                        success : function (data) {
+                            if (data.ok) {
+                                alert("发送成功");
+                            } else {
+                                alert(data.msg);
+                            }
+                        }
+                    });
+                }
+            </script>
+            <button type="button" onclick="send_email_check();return false;">发送验证邮件</button>
+        </c:if>
         <div>
             性别:<input name="gender" value="${obj.gender}"><p />
         </div>

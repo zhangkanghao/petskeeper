@@ -1,11 +1,18 @@
 package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.util.Toolkit;
+import org.nutz.dao.Chain;
+import org.nutz.dao.Cnd;
 import org.nutz.dao.DaoException;
 import org.nutz.dao.FieldFilter;
 import org.nutz.dao.util.Daos;
 import org.nutz.img.Images;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Strings;
+import org.nutz.lang.util.NutMap;
+import org.nutz.log.Log;
+import org.nutz.log.Logs;
 import org.nutz.mvc.Mvcs;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.adaptor.JsonAdaptor;
@@ -16,9 +23,9 @@ import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
@@ -33,6 +40,9 @@ import java.util.Date;
 /**检查session是否有ident*/
 @Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
 public class UserProfileModule extends BaseModule {
+
+    public static final Log log= Logs.get();
+    public static final int TOKEN_LENGTH=10;
 
     @At("/")
     @Ok("jsp:jsp.user.profile")
@@ -135,5 +145,74 @@ public class UserProfileModule extends BaseModule {
         return profile.getAvatar();
     }
 
+    /**
+     * 邮箱验证
+     */
+    @At("/active/mail")
+    @POST
+    public Object activeMail(@Attr(scope=Scope.SESSION, value="ident")int userId, HttpServletRequest req) {
+        NutMap re = new NutMap();
+        UserProfile profile = get(userId);
+        if (Strings.isBlank(profile.getEmail())) {
+            return re.setv("ok", false).setv("msg", "你还没有填邮箱啊!");
+        }
+        String token = String.format("%s,%s,%s", userId, profile.getEmail(), System.currentTimeMillis());
+        token = Toolkit._3DES_encode(emailKEY, token.getBytes());
+        String url = req.getRequestURL() + "?token=" + token;
+        String html = "<div>如果无法点击,请拷贝一下链接到浏览器中打开 验证链接:<a href=\"%s\"> %s</a></div>";
+        html = String.format(html, url, url);
+        try {
+            boolean ok = emailService.send(profile.getEmail(), "验证邮件 by Petskeeper", html);
+            if (!ok) {
+                return re.setv("ok", false).setv("msg", "发送失败");
+            }
+        } catch (Throwable e) {
+            log.debug("发送邮件失败", e);
+            return re.setv("ok", false).setv("msg", "发送失败");
+        }
+        return re.setv("ok", true);
+    }
 
+    /**
+     * 不需要先登录,为了简单起见,这里直接显示验证结果就好了,后面改成跳转页或者验证成功提示页
+     * @param token
+     * @param session
+     * @return
+     */
+    @Filters
+    @At("/active/mail")
+    @GET
+    @Ok("raw")
+    public String activeMailCallback(@Param("token")String token, HttpSession session) {
+        if (Strings.isBlank(token)) {
+            return "请不要直接访问这个链接!!!";
+        }
+        if (token.length() < TOKEN_LENGTH) {
+            return "非法token";
+        }
+        try {
+            token = Toolkit._3DES_decode(emailKEY, Toolkit.hexstr2bytearray(token));
+            if (token == null) {
+                return "非法token";
+            }
+            String[] tmp = token.split(",", 3);
+            if (tmp.length != 3 || tmp[0].length() == 0 || tmp[1].length() == 0 || tmp[2].length() == 0) {
+                return "非法token";
+            }
+            long time = Long.parseLong(tmp[2]);
+            if (System.currentTimeMillis() - time > 10*60*1000) {
+                return "该验证链接已经超时";
+            }
+            int userId = Integer.parseInt(tmp[0]);
+            Cnd cnd = Cnd.where("userId", "=", userId).and("email", "=", tmp[1]);
+            int re = dao.update(UserProfile.class, Chain.make("emailChecked",true), cnd);
+            if (re == 1) {
+                return "验证成功";
+            }
+            return "验证失败!!请重新验证!!";
+        } catch (Throwable e) {
+            log.debug("检查token时出错", e);
+            return "非法token";
+        }
+    }
 }
