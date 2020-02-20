@@ -1,6 +1,7 @@
 package cn.koer.petskeeper;
 
 import cn.koer.petskeeper.bean.User;
+import cn.koer.petskeeper.service.UserService;
 import org.nutz.dao.Dao;
 import org.nutz.dao.util.Daos;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;
@@ -19,13 +20,10 @@ public class MainSetup implements Setup {
         // 获取NutQuartzCronJobFactory从而触发计划任务的初始化与启动
         ioc.get(NutQuartzCronJobFactory.class);
         Daos.createTablesInPackage(dao,"cn.koer.petskeeper",false);
+        Daos.migration(dao, User.class, true, false, false);
         if (dao.count(User.class) == 0) {
-            User user = new User();
-            user.setName("admin");
-            user.setPassword("123456");
-            user.setCreateTime(new Date());
-            user.setUpdateTime(new Date());
-            dao.insert(user);
+            UserService us = ioc.get(UserService.class);
+            us.add("admin", "123456");
         }
     }
 

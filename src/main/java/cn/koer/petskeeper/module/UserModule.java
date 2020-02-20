@@ -2,12 +2,14 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.service.UserService;
 import cn.koer.petskeeper.util.Toolkit;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
 import org.nutz.ioc.aop.Aop;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
@@ -28,6 +30,8 @@ import java.util.Date;
 @Filters(@By(type= CheckSession.class,args = {"ident","/"}))
 public class UserModule extends BaseModule{
 
+    @Inject
+    protected UserService userService;
 
     @At("/")
     @Ok("jsp:jsp.user.list") // 真实路径是 /WEB-INF/jsp/user/list.jsp
@@ -41,6 +45,7 @@ public class UserModule extends BaseModule{
 
     @At
     @Filters()
+    @POST
     public Object login(@Param("username") String username, @Param("password") String password,@Param("captcha")String captcha,@Attr(scope = Scope.SESSION,value = "nutz_captcha")String _captcha, HttpSession session) {
         NutMap re = new NutMap();
         if (!Toolkit.checkCaptcha(_captcha, captcha)) {
@@ -51,6 +56,8 @@ public class UserModule extends BaseModule{
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("ident", user.getId());
+            // 完成nutdao_realm后启用.
+            // SecurityUtils.getSubject().login(new SimpleShiroToken(userId));
             return re.setv("ok", true);
         }
     }
@@ -106,9 +113,7 @@ public class UserModule extends BaseModule{
         if (msg != null) {
             return re.setv("ok", false).setv("msg", msg);
         }
-        user.setCreateTime(new Date());
-        user.setUpdateTime(new Date());
-        user = dao.insert(user);
+        user = userService.add(user.getName(),user.getPassword());
         return re.setv("ok", true).setv("data", user);
     }
 
@@ -116,21 +121,12 @@ public class UserModule extends BaseModule{
      *  更新
      */
     @At
-    public Object update(@Param("..") User user) {
-        NutMap re = new NutMap();
-        String msg = checkUser(user, false);
-        if (msg != null) {
-            return re.setv("ok", false).setv("msg", msg);
+    public Object update(@Param("password")String password, @Attr("ident")int me) {
+        if (Strings.isBlank(password) || password.length() < 6) {
+            return new NutMap().setv("ok", false).setv("msg", "密码不符合要求");
         }
-        // 不允许更新用户名
-        user.setName(null);
-        //也不允许更新创建时间
-        user.setCreateTime(null);
-        // 设置正确的更新时间
-        user.setUpdateTime(new Date());
-        // 真正更新的其实只有password和salt
-        dao.updateIgnoreNull(user);
-        return re.setv("ok", true);
+        userService.updatePassword(me, password);
+        return new NutMap().setv("ok", true);
     }
 
     /**

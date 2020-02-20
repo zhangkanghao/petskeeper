@@ -1,8 +1,10 @@
 package cn.koer.petskeeper.bean;
 
 import org.nutz.dao.entity.annotation.*;
+import org.nutz.lang.random.R;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * 2 * @Author: Koer
@@ -21,10 +23,17 @@ public class User extends BasePojo{
     private String password;
     @Column("u_salt")
     private String salt;
-
+    @Column
+    private boolean locked;
+    @ManyMany(from = "u_id",relation = "t_user_role",target = Role.class,to = "role_id")
+    protected List<Role> roles;
+    @ManyMany(from = "u_id",relation = "t_user_permission",target = Permission.class,to = "permission_id")
+    protected List<Permission> permissions;
     /**与userprofile一对一关联*/
     @One(target=UserProfile.class, field="id", key="userId")
     protected UserProfile profile;
+
+
 
     public int getId() {
         return id;
