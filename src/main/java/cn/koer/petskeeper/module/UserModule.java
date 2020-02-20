@@ -2,19 +2,18 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.util.Toolkit;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
-import org.nutz.dao.Dao;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
 import org.nutz.ioc.aop.Aop;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
+import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
-import org.nutz.trans.Atom;
-import org.nutz.trans.Trans;
 
 import javax.servlet.http.HttpSession;
 import java.util.Date;
@@ -42,13 +41,17 @@ public class UserModule extends BaseModule{
 
     @At
     @Filters()
-    public Object login(@Param("username") String username, @Param("password") String password, HttpSession session) {
-        User user = dao.fetch(User.class, Cnd.where("u_name", "=", username).and("u_pwd", "=", password));
+    public Object login(@Param("username") String username, @Param("password") String password,@Param("captcha")String captcha,@Attr(scope = Scope.SESSION,value = "nutz_captcha")String _captcha, HttpSession session) {
+        NutMap re = new NutMap();
+        if (!Toolkit.checkCaptcha(_captcha, captcha)) {
+            return re.setv("ok", false).setv("msg", "验证码错误");
+        }
+        User user = dao.fetch(User.class, Cnd.where("name", "=", username).and("password", "=", password));
         if (user == null) {
-            return false;
+            return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("ident", user.getId());
-            return true;
+            return re.setv("ok", true);
         }
     }
 
