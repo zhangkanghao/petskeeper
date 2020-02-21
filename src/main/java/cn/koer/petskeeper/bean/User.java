@@ -13,15 +13,14 @@ import java.util.List;
  */
 @Table("t_user")
 public class User extends BasePojo{
-    @Id()
-    @Column("u_id")
+    @Id
     private int id;
     @Name
-    @Column("u_name")
+    @Column
     private String name;
-    @Column("u_pwd")
+    @Column
     private String password;
-    @Column("u_salt")
+    @Column
     private String salt;
     /**与userprofile一对一关联*/
     @One(target=UserProfile.class, field="id", key="userId")
