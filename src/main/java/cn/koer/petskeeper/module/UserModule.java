@@ -56,8 +56,6 @@ public class UserModule extends BaseModule{
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("ident", user.getId());
-            // 完成nutdao_realm后启用.
-            // SecurityUtils.getSubject().login(new SimpleShiroToken(userId));
             return re.setv("ok", true);
         }
     }
