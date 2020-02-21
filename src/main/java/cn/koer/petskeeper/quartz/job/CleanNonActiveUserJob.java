@@ -36,7 +36,7 @@ public class CleanNonActiveUserJob implements Job {
         int deleted = dao.clear(UserProfile.class, cnd);
         log.debugf("delete %d UserProfile", deleted);
 
-        Sql sql = Sqls.create("delete from $user_table where u_id > 10 and not exists (select 1 from $user_profile_table where $user_table.u_id = u_id ) and u_cdate < @deadtime");
+        Sql sql = Sqls.create("delete from $user_table where id > 10 and not exists (select 1 from $user_profile_table where $user_table.id = uid ) and ct < @deadtime");
         sql.vars().set("user_table", dao.getEntity(User.class).getTableName());
         sql.vars().set("user_profile_table", dao.getEntity(UserProfile.class).getTableName());
         sql.params().set("deadtime", deadtime);

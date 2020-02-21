@@ -7,9 +7,9 @@ import org.nutz.json.JsonFormat;
 import java.util.Date;
 
 public abstract class BasePojo {
-    @Column("u_cdate")
+    @Column("ct")
     protected Date createTime;
-    @Column("u_udate")
+    @Column("ut")
     protected Date updateTime;
 
     @Override
