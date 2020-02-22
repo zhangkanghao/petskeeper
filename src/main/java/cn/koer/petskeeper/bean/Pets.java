@@ -2,14 +2,14 @@ package cn.koer.petskeeper.bean;
 
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Id;
+import org.nutz.dao.entity.annotation.Table;
 import org.nutz.json.JsonField;
-
-import java.beans.ConstructorProperties;
 
 /**
  * @Author Koer
  * @Date 2020/2/21 22:50
  */
+@Table("t_pet")
 public class Pets extends BasePojo {
 
     @Id

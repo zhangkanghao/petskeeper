@@ -8,14 +8,13 @@ import org.nutz.dao.entity.annotation.Table;
  * @Author Koer
  * @Date 2020/2/21 23:02
  */
-@Table("t_like")
-public class Like extends BasePojo {
+@Table("t_praise")
+public class Praise extends BasePojo {
 
     @Id
-    @Column
     private int id;
 
-    /**分是给文章的like还是给评论的like*/
+    /**分是给文章的like还是给评论的praise*/
     @Column
     private boolean type;
 
