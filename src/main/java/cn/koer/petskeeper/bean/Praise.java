@@ -14,7 +14,7 @@ public class Praise extends BasePojo {
     @Id
     private int id;
 
-    /**分是给文章的like还是给评论的praise*/
+    /**分是给文章的like还是给评论的praise,和给宠物的点赞*/
     @Column
     private boolean type;
 
