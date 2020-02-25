@@ -27,8 +27,7 @@
                     for (var i=0;i<data.list.length;i++) {
                         var pet = data.list[i];
                         console.log(pet);
-                        var tmp = "\n<p>" + pet.id + " " + pet.petName+" "+pet.gender+" "+pet.type+" "+pet.birthTime+" "+pet.adoptionTime+" "+pet.sterilized+" "+pet.description
-                            + " <button onclick='pet_update(" + pet.id +");'>修改</button> "
+                        var tmp = "\n<p>" + pet.id + " " + pet.petName+" "+pet.gender+" "+pet.type+" "+pet.birthTime+" "+pet.adoptionTime+" "+pet.sterilized
                             + " <button onclick='pet_delete(" + pet.id +");'>删除</button> "
                             + "</p>";
                         list_html += tmp;
@@ -57,35 +56,32 @@
                     }
                 });
             });
-        });
-        function pet_update(petId) {
-            var passwd = prompt("请输入新的密码");
-            if (passwd) {
+            $("#pet_update_btn").click(function () {
                 $.ajax({
-                    url : base + "/pet/update",
-                    data : {"id":petId,"password":passwd},
-                    dataType : "json",
-                    success : function (data) {
-                        if (data.ok) {
+                    url:base+"/pet/update",
+                    data:$("#pet_update_form").serialize(),
+                    dataType:"json",
+                    success:function (data) {
+                        if(data.ok){
                             pet_reload();
                             alert("修改成功");
-                        } else {
+                        }else {
                             alert(data.msg);
                         }
                     }
                 });
-            }
-        };
+            });
+        });
         function pet_delete(petId) {
             var s = prompt("请输入y确认删除");
             if (s == "y") {
                 $.ajax({
                     url : base + "/pet/delete",
-                    data : {"id":petId},
+                    data : {"petId":petId},
                     dataType : "json",
                     success : function (data) {
                         if (data.ok) {
-                            user_reload();
+                            pet_reload();
                             alert("删除成功");
                         } else {
                             alert(data.msg);
@@ -133,6 +129,29 @@
         简介<input name="description">
     </form>
     <button id="pet_add_btn">新增</button>
+</div>
+<div id="pet_update">
+    <form action="#" id="pet_update_form">
+        ID<input name="id">
+        昵称<input name="petName">
+        性别<select name="gender">
+                <option value ="GG">GG</option>
+                <option value ="MM">MM</option>
+            </select>
+        品种<select name="type">
+                <option value ="英短">英短</option>
+                <option value ="美短">美短</option>
+                <option value ="其他">其他</option>
+            </select>
+        出生日期<input type="date" value="2020-02-25" name="birthTime"/>
+        到家时间<input type="date" value="2020-02-25" name="adoptionTime"/>
+        绝育情况<select name="sterilized">
+            <option value ="已绝育">已绝育</option>
+            <option value ="未绝育">未绝育</option>
+        </select>
+        简介<input name="description">
+    </form>
+    <button id="pet_update_btn">修改</button>
 </div>
 </body>
 </html>
