@@ -4,6 +4,7 @@ import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
 import cn.koer.petskeeper.service.UserService;
 import cn.koer.petskeeper.util.Toolkit;
+import org.apache.shiro.crypto.hash.Sha256Hash;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
@@ -18,7 +19,6 @@ import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
 
 import javax.servlet.http.HttpSession;
-import java.util.Date;
 
 /**
  * @author Koer
@@ -27,8 +27,8 @@ import java.util.Date;
 @At("/user")
 @Ok("json:{locked:'password',ignoreNull:true}")
 @Fail("http:500")
-@Filters(@By(type= CheckSession.class,args = {"ident","/"}))
-public class UserModule extends BaseModule{
+@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
+public class UserModule extends BaseModule {
 
     @Inject
     protected UserService userService;
@@ -46,13 +46,13 @@ public class UserModule extends BaseModule{
     @At
     @Filters()
     @POST
-    public Object login(@Param("username") String username, @Param("password") String password,@Param("captcha")String captcha,@Attr(scope = Scope.SESSION,value = "nutz_captcha")String _captcha, HttpSession session) {
+    public Object login(@Param("username") String username, @Param("password") String password, @Param("captcha") String captcha, @Attr(scope = Scope.SESSION, value = "nutz_captcha") String _captcha, HttpSession session) {
         NutMap re = new NutMap();
         if (!Toolkit.checkCaptcha(_captcha, captcha)) {
             return re.setv("ok", false).setv("msg", "验证码错误");
         }
-        User user = dao.fetch(User.class, Cnd.where("name", "=", username).and("password", "=", password));
-        if (user == null) {
+        User user = dao.fetch(User.class, Cnd.where("name", "=", username));
+        if (user == null||new Sha256Hash(password, user.getSalt()).toHex() == user.getPassword()) {
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("ident", user.getId());
@@ -111,15 +111,15 @@ public class UserModule extends BaseModule{
         if (msg != null) {
             return re.setv("ok", false).setv("msg", msg);
         }
-        user = userService.add(user.getName(),user.getPassword());
+        user = userService.add(user.getName(), user.getPassword());
         return re.setv("ok", true).setv("data", user);
     }
 
     /**
-     *  更新
+     * 更新
      */
     @At
-    public Object update(@Param("password")String password, @Attr("ident")int me) {
+    public Object update(@Param("password") String password, @Attr("ident") int me) {
         if (Strings.isBlank(password) || password.length() < 6) {
             return new NutMap().setv("ok", false).setv("msg", "密码不符合要求");
         }
@@ -129,6 +129,7 @@ public class UserModule extends BaseModule{
 
     /**
      * 删除，@Attr是session.getAttribute()
+     *
      * @param id
      * @param me
      * @return
@@ -140,14 +141,14 @@ public class UserModule extends BaseModule{
             return new NutMap().setv("ok", false).setv("msg", "不能删除当前用户!!");
         }
         /**再严谨一些的话,需要判断是否为>0*/
-        dao.delete(User.class,id);
-        dao.clear(UserProfile.class,Cnd.where("userId","=",me));
+        dao.delete(User.class, id);
+        dao.clear(UserProfile.class, Cnd.where("userId", "=", me));
         return new NutMap().setv("ok", true);
     }
 
     @At
-    public Object query(@Param("name")String name, @Param("..") Pager pager) {
-        Cnd cnd = Strings.isBlank(name)? null : Cnd.where("name", "like", "%"+name+"%");
+    public Object query(@Param("name") String name, @Param("..") Pager pager) {
+        Cnd cnd = Strings.isBlank(name) ? null : Cnd.where("name", "like", "%" + name + "%");
         QueryResult qr = new QueryResult();
         qr.setList(dao.query(User.class, cnd, pager));
         pager.setRecordCount(dao.count(User.class, cnd));
