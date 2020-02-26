@@ -56,6 +56,7 @@ public class UserModule extends BaseModule {
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("ident", user.getId());
+            session.setAttribute("User",user);
             return re.setv("ok", true);
         }
     }
