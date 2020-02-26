@@ -1,6 +1,7 @@
 package cn.koer.petskeeper.bean;
 
 import org.nutz.dao.entity.annotation.Column;
+import org.nutz.dao.entity.annotation.Default;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
 
@@ -21,32 +22,44 @@ public class Article extends BasePojo{
 
     /**发帖人昵称*/
     @Column
+    @Default("匿名")
     private String nickname;
 
     @Column
     private String subject;
 
+    /**求助/分享/科普*/
     @Column
     private String type;
 
+    /**私密/公开/关注可见*/
     @Column
-    private int content;
+    private String readType;
+
+    @Column
+    private String content;
 
     /**浏览数*/
     @Column
+    @Default("0")
     private int visit;
 
     /**点赞数*/
     @Column
+    @Default("0")
     private int praise;
 
     /**评论数*/
+    @Column
+    @Default("0")
     private int comment;
 
     /**匿名*/
+    @Column
     private boolean annoymous;
 
     /**状态：草稿、发布*/
+    @Column
     private int status;
 
 
@@ -90,11 +103,19 @@ public class Article extends BasePojo{
         this.type = type;
     }
 
-    public int getContent() {
+    public String getReadType() {
+        return readType;
+    }
+
+    public void setReadType(String readType) {
+        this.readType = readType;
+    }
+
+    public String getContent() {
         return content;
     }
 
-    public void setContent(int content) {
+    public void setContent(String content) {
         this.content = content;
     }
 
