@@ -68,9 +68,29 @@ public class ArticleModule extends BaseModule{
         return new NutMap().setv("ok",true);
     }
 
+    /**
+     * 查询已经发布的
+     * @param userId
+     * @param pager
+     * @return
+     */
     @At
-    public Object query(@Param("userId")int userId,@Param("..") Pager pager){
+    public Object queryPost(@Param("userId")int userId,@Param("..") Pager pager){
         Cnd cnd=Cnd.where("uid","=",userId).and("status","=","1");
+        QueryResult qr = new QueryResult();
+        qr.setList(dao.query(Article.class, cnd, pager));
+        pager.setRecordCount(dao.count(Article.class, cnd));
+        qr.setPager(pager);
+        //默认分页是第1页,每页20条
+        return qr;
+    }
+
+    /**
+     *  查询草稿箱
+     */
+    @At
+    public Object querySave(@Param("userId")int userId,@Param("..") Pager pager){
+        Cnd cnd=Cnd.where("uid","=",userId).and("status","=","0");
         QueryResult qr = new QueryResult();
         qr.setList(dao.query(Article.class, cnd, pager));
         pager.setRecordCount(dao.count(Article.class, cnd));
