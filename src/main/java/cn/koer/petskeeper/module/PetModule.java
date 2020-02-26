@@ -9,6 +9,7 @@ import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.filter.CheckSession;
 
 import java.util.Date;
 
@@ -18,6 +19,7 @@ import java.util.Date;
  */
 @IocBean
 @At("/pet")
+@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
 public class PetModule extends BaseModule {
 
 

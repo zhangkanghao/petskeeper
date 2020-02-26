@@ -10,6 +10,7 @@ import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
+import org.nutz.mvc.filter.CheckSession;
 
 import java.util.Date;
 
@@ -19,6 +20,7 @@ import java.util.Date;
  */
 @At("/article")
 @IocBean
+@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
 public class ArticleModule extends BaseModule{
 
     @At("/")
