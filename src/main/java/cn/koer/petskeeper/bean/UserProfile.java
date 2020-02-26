@@ -45,6 +45,15 @@ public class UserProfile extends BasePojo{
     @Column("loc")
     protected String location;
 
+    @Column
+    protected int praise;
+
+    @Column
+    protected int follower;
+
+    @Column
+    protected int following;
+
     public int getUserId() {
         return userId;
     }
@@ -107,5 +116,29 @@ public class UserProfile extends BasePojo{
 
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public int getPraise() {
+        return praise;
+    }
+
+    public void setPraise(int praise) {
+        this.praise = praise;
+    }
+
+    public int getFollower() {
+        return follower;
+    }
+
+    public void setFollower(int follower) {
+        this.follower = follower;
+    }
+
+    public int getFollowing() {
+        return following;
+    }
+
+    public void setFollowing(int following) {
+        this.following = following;
     }
 }
