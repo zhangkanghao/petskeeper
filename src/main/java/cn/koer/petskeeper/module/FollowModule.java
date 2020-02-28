@@ -73,8 +73,8 @@ public class FollowModule extends BaseModule {
     public Object recommend(@Param("..") Pager pager) {
         QueryResult qr = new QueryResult();
         int num = 20;
-        qr.setList(dao.query(User.class, Cnd.wrap("exists (select 1 from t_user_profile where follow>'%d')", num), pager));
-        pager.setRecordCount(dao.count(User.class, Cnd.wrap("exists (select 1 from t_user_profile where follow>'%d')", num)));
+        qr.setList(dao.query(UserProfile.class, Cnd.where("follower",">",num), pager));
+        pager.setRecordCount(dao.count(UserProfile.class, Cnd.where("follower",">",num)));
         qr.setPager(pager);
         return qr;
     }
