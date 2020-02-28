@@ -1,12 +1,10 @@
 package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Follow;
-import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
 import org.nutz.dao.QueryResult;
-import org.nutz.dao.Sqls;
 import org.nutz.dao.pager.Pager;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.util.NutMap;
