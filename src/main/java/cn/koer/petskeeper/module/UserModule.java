@@ -33,7 +33,6 @@ public class UserModule extends BaseModule {
     @Inject
     protected UserService userService;
 
-    /** 真实路径是 /WEB-INF/jsp/user/list.jsp*/
     @At("/")
     @Ok("jsp:jsp.user.list")
     public void index() {
