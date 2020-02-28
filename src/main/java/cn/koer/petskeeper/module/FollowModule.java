@@ -2,8 +2,8 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Follow;
 import cn.koer.petskeeper.bean.UserProfile;
+import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
-import org.nutz.dao.Condition;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.Sqls;
 import org.nutz.dao.entity.Entity;
@@ -11,6 +11,8 @@ import org.nutz.dao.entity.Record;
 import org.nutz.dao.pager.Pager;
 import org.nutz.dao.sql.Sql;
 import org.nutz.dao.sql.SqlCallback;
+import org.nutz.dao.util.Daos;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
@@ -25,6 +27,8 @@ import java.util.Date;
 import java.util.List;
 
 import com.alibaba.fastjson.JSONObject;
+import org.nutz.trans.Atom;
+import org.nutz.trans.Trans;
 
 
 /**
@@ -87,36 +91,55 @@ public class FollowModule extends BaseModule {
     }
 
     @At
-    public Object add(@Param("userId") int userId, @Attr(scope = Scope.SESSION, value = "ident") int me) {
-        Follow follow = new Follow();
+    public Object add(@Param("userId") final int userId, @Attr(scope = Scope.SESSION, value = "ident") final int me) {
+        final Follow follow=new Follow();
         follow.setFrom(me);
         follow.setTo(userId);
         follow.setCreateTime(new Date());
         follow.setUpdateTime(new Date());
-        dao.insert(follow);
-        return new NutMap().setv("ok", true);
+        Trans.exec(new Atom() {
+            @Override
+            public void run() {
+                dao.insert(follow);
+                dao.update(UserProfile.class, Chain.makeSpecial("following","+1"),Cnd.where("uid","=",me));
+                dao.update(UserProfile.class, Chain.makeSpecial("follower","+1"),Cnd.where("uid","=",userId));
+            }
+        });
+        return new NutMap().setv("ok", true).setv("data",follow);
     }
 
     @At
-    public Object remove(@Param("followId") int followId, @Attr(scope = Scope.SESSION, value = "ident") int me) {
+    public Object remove(@Param("followId")int followId, @Param("userId") final int userId, @Attr(scope = Scope.SESSION, value = "ident") final int me) {
         NutMap re = new NutMap();
-        Follow follow = dao.fetch(Follow.class, followId);
+        final Follow follow = dao.fetch(Follow.class, followId);
         if (follow == null) {
             return re.setv("ok", false).setv("msg", "未关注用户");
         } else if (follow.getFrom() != me) {
             return re.setv("ok", false).setv("msg", "非法操作");
         }
-        dao.delete(follow);
+        Trans.exec(new Atom() {
+            @Override
+            public void run() {
+                dao.delete(follow);
+                dao.update(UserProfile.class, Chain.makeSpecial("following","-1"),Cnd.where("uid","=",me));
+                dao.update(UserProfile.class, Chain.makeSpecial("follower","-1"),Cnd.where("uid","=",userId));
+            }
+        });
         return new NutMap().setv("ok", true);
     }
 
     @At
-    public Object recommend(@Param("..") Pager pager) {
-        QueryResult qr = new QueryResult();
-        int num = 20;
-        qr.setList(dao.query(UserProfile.class, Cnd.where("follower",">",num), pager));
-        pager.setRecordCount(dao.count(UserProfile.class, Cnd.where("follower",">",num)));
-        qr.setPager(pager);
-        return qr;
+    public Object recommend(@Param("..") Pager pager,@Attr(scope = Scope.SESSION,value = "ident")int me) {
+        Sql sql=Sqls.create("select uid,nickname,avatar,dt,praise,follower from t_user_profile where (follower >@follower or praise>@praise) and uid not in (SELECT to_id from t_follow where from_id = @ident_id)");
+        sql.setParam("ident_id",me);
+        sql.setParam("follower",20);
+        sql.setParam("praise",100);
+        pager.setRecordCount((int)Daos.queryCount(dao,"select uid,nickname,avatar,dt,praise,follower from t_user_profile where (follower >@follower or praise>@praise) and uid not in (SELECT to_id from t_follow where from_id = @ident_id)"));
+        sql.setPager(pager);
+        sql.setCallback(Sqls.callback.entities());
+        sql.setEntity(dao.getEntity(UserProfile.class));
+        dao.execute(sql);
+        List<UserProfile> users = sql.getList(UserProfile.class);
+        return new NutMap().setv("ok",true).setv("data",users);
     }
 }
