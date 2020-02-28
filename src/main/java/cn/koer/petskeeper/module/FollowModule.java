@@ -2,9 +2,9 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Follow;
 import cn.koer.petskeeper.bean.UserProfile;
+import com.alibaba.fastjson.JSON;
 import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
-import org.nutz.dao.QueryResult;
 import org.nutz.dao.Sqls;
 import org.nutz.dao.entity.Entity;
 import org.nutz.dao.entity.Record;
@@ -12,7 +12,6 @@ import org.nutz.dao.pager.Pager;
 import org.nutz.dao.sql.Sql;
 import org.nutz.dao.sql.SqlCallback;
 import org.nutz.dao.util.Daos;
-import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
@@ -62,6 +61,7 @@ public class FollowModule extends BaseModule {
     }
 
     @At("/follower")
+    @Ok("jsp:jsp.user.FollowList")
     public Object getFollower(@Param("userId") int userId,@Attr(scope = Scope.SESSION,value = "ident")int me) {
         Sql sql= Sqls.create("select uid,nickname,avatar,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
                 "where uid in (select from_id from t_follow where to_id =@to_id)");
@@ -72,11 +72,12 @@ public class FollowModule extends BaseModule {
         sql.setEntity(entity);
         dao.execute(sql);
         List<Record> users = sql.getList(Record.class);
-        return new NutMap().setv("ok",true).setv("data",users);
+        return JSON.toJSON(users);
 
     }
 
     @At("/following")
+    @Ok("jsp:jsp.user.FollowList")
     public Object getFollowing(@Param("userId") int userId,@Attr(scope = Scope.SESSION,value = "ident")int me) {
         Sql sql= Sqls.create("select uid,nickname,avatar,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
                 "where uid in (select to_id from t_follow where from_id =@from_id)");
@@ -87,7 +88,7 @@ public class FollowModule extends BaseModule {
         sql.setEntity(entity);
         dao.execute(sql);
         List<Record> users = sql.getList(Record.class);
-        return new NutMap().setv("ok",true).setv("data",users);
+        return JSON.toJSON(users);
     }
 
     @At
