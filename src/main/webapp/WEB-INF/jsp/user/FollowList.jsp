@@ -48,37 +48,37 @@
     </script>
 </head>
 <body>
-<c:forEach items="${obj}" var="user">
-    <div>
-        头像<img id="avatar" src="data:image/jpg;base64,${user.avatar}">
-        <form action="#" id="user_profile${user.uid}" method="post">
-            <div>
-                userId:<c:out value="${user.userId}"></c:out>
-            </div>
-            <div>
-                昵称:<input name="nickname" value="${user.nickname}">
-            </div>
-            <div>
-                性别:<input name="description" value="${user.description}">
-            </div>
-            <div>
-                自我介绍:<input name="praise" value="${user.praise}">
-            </div>
-            <div>
-                地理位置:<input name="follower" value="${user.follower}">
-            </div>
-        </form>
-        ${user.id}
-        <c:choose>
-            <c:when test="${user.id}>0">
-                <button id="follow" type="button" onclick="remove(${user.id},${user.uid});return false;">取消关注</button>
-            </c:when>
-            <c:otherwise>
-                <button id="follow" type="button" onclick="add(${user.uid});return false;">关注</button>
-            </c:otherwise>
-        </c:choose>
-        <button type="button" id="user_profile_btn${user.uid}">更新</button>
-    </div>
-</c:forEach>
+    <c:forEach items="${obj}" var="user">
+        <div>
+            头像<img id="avatar" src="data:image/jpg;base64,${user.avatar}">
+            <form action="#" id="user_profile${user.userId}" method="post">
+                <div>
+                    userId:<c:out value="${user.userId}"></c:out>
+                </div>
+                <div>
+                    昵称:<input name="nickname" value="${user.nickname}">
+                </div>
+                <div>
+                    性别:<input name="description" value="${user.description}">
+                </div>
+                <div>
+                    自我介绍:<input name="praise" value="${user.praise}">
+                </div>
+                <div>
+                    地理位置:<input name="follower" value="${user.follower}">
+                </div>
+            </form>
+            ${user.id}
+            <c:choose>
+                <c:when test="${user.id}>0">
+                    <button id="follow" type="button" onclick="remove(${user.id},${user.uid});return false;">取消关注</button>
+                </c:when>
+                <c:otherwise>
+                    <button id="follow" type="button" onclick="add(${user.uid});return false;">关注</button>
+                </c:otherwise>
+            </c:choose>
+            <button type="button" id="user_profile_btn${user.userId}">更新</button>
+        </div>
+    </c:forEach>
 </body>
 </html>
