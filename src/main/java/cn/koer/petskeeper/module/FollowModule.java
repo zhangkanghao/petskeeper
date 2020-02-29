@@ -48,7 +48,6 @@ public class FollowModule extends BaseModule {
                     JSONObject obj=new JSONObject();
                     obj.put("userId",rs.getInt("uid"));
                     obj.put("nickname",rs.getString("nickname"));
-                    obj.put("avatar",rs.getBlob("avatar"));
                     obj.put("description",rs.getString("dt"));
                     obj.put("praise",rs.getInt("praise"));
                     obj.put("follower",rs.getInt("follower"));
@@ -63,7 +62,7 @@ public class FollowModule extends BaseModule {
     @At("/follower")
     @Ok("jsp:jsp.user.FollowList")
     public Object getFollower(@Param("userId") int userId,@Attr(scope = Scope.SESSION,value = "ident")int me) {
-        Sql sql= Sqls.create("select uid,nickname,avatar,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
+        Sql sql= Sqls.create("select uid,nickname,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
                 "where uid in (select from_id from t_follow where to_id =@to_id)");
         sql.setParam("ident_id",me);
         sql.setParam("to_id",userId);
@@ -79,7 +78,7 @@ public class FollowModule extends BaseModule {
     @At("/following")
     @Ok("jsp:jsp.user.FollowList")
     public Object getFollowing(@Param("userId") int userId,@Attr(scope = Scope.SESSION,value = "ident")int me) {
-        Sql sql= Sqls.create("select uid,nickname,avatar,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
+        Sql sql= Sqls.create("select uid,nickname,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
                 "where uid in (select to_id from t_follow where from_id =@from_id)");
         sql.setParam("ident_id",me);
         sql.setParam("from_id",userId);
@@ -93,6 +92,9 @@ public class FollowModule extends BaseModule {
 
     @At
     public Object add(@Param("userId") final int userId, @Attr(scope = Scope.SESSION, value = "ident") final int me) {
+        if(userId==0){
+            return new NutMap().setv("ok",false).setv("msg","空指针");
+        }
         final Follow follow=new Follow();
         follow.setFrom(me);
         follow.setTo(userId);
@@ -131,11 +133,11 @@ public class FollowModule extends BaseModule {
 
     @At
     public Object recommend(@Param("..") Pager pager,@Attr(scope = Scope.SESSION,value = "ident")int me) {
-        Sql sql=Sqls.create("select uid,nickname,avatar,dt,praise,follower from t_user_profile where (follower >@follower or praise>@praise) and uid not in (SELECT to_id from t_follow where from_id = @ident_id)");
+        Sql sql=Sqls.create("select uid,nickname,dt,praise,follower from t_user_profile where (follower >@follower or praise>@praise) and uid not in (SELECT to_id from t_follow where from_id = @ident_id)");
         sql.setParam("ident_id",me);
         sql.setParam("follower",20);
         sql.setParam("praise",100);
-        pager.setRecordCount((int)Daos.queryCount(dao,"select uid,nickname,avatar,dt,praise,follower from t_user_profile where (follower >@follower or praise>@praise) and uid not in (SELECT to_id from t_follow where from_id = @ident_id)"));
+        pager.setRecordCount((int)Daos.queryCount(dao,"select uid,nickname,dt,praise,follower from t_user_profile where (follower >@follower or praise>@praise) and uid not in (SELECT to_id from t_follow where from_id = @ident_id)"));
         sql.setPager(pager);
         sql.setCallback(Sqls.callback.entities());
         sql.setEntity(dao.getEntity(UserProfile.class));

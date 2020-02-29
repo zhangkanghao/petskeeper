@@ -15,42 +15,12 @@
     <script type="text/javascript">
         var base = '<%=request.getAttribute("base")%>';
         console.log(${obj});
-        function remove(fid,id) {
-            $.ajax({
-                url : "${base}/follow/remove?userId="+id+"&followId="+fid,
-                type : "POST",
-                dataType : "json",
-                success : function (data) {
-                    if (data.ok) {
-                        $("#follow").html("关注");
-                        $("#follow").onclick="add("+id+")";
-                    } else {
-                        alert(data.msg);
-                    }
-                }
-            });
-        }
-        function add(id) {
-            $.ajax({
-                url : "${base}follow/add?userId="+id,
-                type : "POST",
-                dataType : "json",
-                success : function (data) {
-                    if (data.ok) {
-                        $("#follow").html("取消关注");
-                        $("#follow").onclick="remove("+data.data.id+","+data.data.to+")";
-                    } else {
-                        alert(data.msg);
-                    }
-                }
-            });
-        }
     </script>
 </head>
 <body>
     <c:forEach items="${obj}" var="user">
         <div>
-            头像<img id="avatar" src="data:image/jpg;base64,${user.avatar}">
+            头像<img id="avatar" src="${base}/user/profile/avatar?userId=${user.userId}">
             <form action="#" id="user_profile${user.userId}" method="post">
                 <div>
                     userId:<c:out value="${user.userId}"></c:out>
@@ -68,13 +38,46 @@
                     地理位置:<input name="follower" value="${user.follower}">
                 </div>
             </form>
-            ${user.id}
             <c:choose>
-                <c:when test="${user.id}>0">
-                    <button id="follow" type="button" onclick="remove(${user.id},${user.uid});return false;">取消关注</button>
+                <c:when test="${user.id>0}">
+                    <script type="text/javascript">
+                        function remove(fid,id) {
+                            $.ajax({
+                                url : "${base}/follow/remove?userId="+id+"&followId="+fid,
+                                type : "POST",
+                                dataType : "json",
+                                success : function (data) {
+                                    if (data.ok) {
+                                        $("#follow").html("关注");
+                                        $("#follow").onclick="add("+id+")";
+                                    } else {
+                                        alert(data.msg);
+                                    }
+                                }
+                            });
+                        }
+                    </script>
+                    <button id="follow" type="button" onclick="remove(${user.id},${user.userId});return false;">取消关注</button>
                 </c:when>
                 <c:otherwise>
-                    <button id="follow" type="button" onclick="add(${user.uid});return false;">关注</button>
+                    <script type="text/javascript">
+                        function add(id) {
+                            $.ajax({
+                                url : "${base}/follow/add?userId="+id,
+                                type : "POST",
+                                dataType : "json",
+                                success : function (data) {
+                                    if (data.ok) {
+                                        $("#follow").html("取消关注");
+                                        $("#follow").onclick="remove("+data.data.id+","+data.data.to+")";
+                                    } else {
+                                        alert(data.msg);
+                                    }
+                                }
+                            });
+                        }
+                    </script>
+                    <button id="follow" type="button" onclick="add(${user.userId});return false;">关注</button>
                 </c:otherwise>
             </c:choose>
             <button type="button" id="user_profile_btn${user.userId}">更新</button>
