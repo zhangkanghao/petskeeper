@@ -14,9 +14,9 @@ public class Praise extends BasePojo {
     @Id
     private int id;
 
-    /**分是给文章的like还是给评论的praise,和给宠物的点赞*/
+    /**分是给0文章的praise还是给1评论的praise,2宠物*/
     @Column
-    private boolean type;
+    private int type;
 
     @Column
     private int targetId;
@@ -32,11 +32,11 @@ public class Praise extends BasePojo {
         this.id = id;
     }
 
-    public boolean isType() {
+    public int getType() {
         return type;
     }
 
-    public void setType(boolean type) {
+    public void setType(int type) {
         this.type = type;
     }
 
