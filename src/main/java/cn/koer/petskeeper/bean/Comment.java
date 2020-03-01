@@ -22,15 +22,14 @@ public class Comment extends BasePojo{
     @Default("false")
     private boolean type;
 
-    /**回复的顶层，就是回复楼，子孙都在这层楼里并列显示*/
+    /**回复的文章id或者是评论id*/
     @Column
-    @Default("0")
     private int root;
 
     @Column("from_id")
     private int from;
 
-    /**对什么评论：如果是文章，parentId就是aid，对评论进行评论，就是cid*/
+    /**评论对象用户的id*/
     @Column("to_id")
     private int to;
 
@@ -38,7 +37,15 @@ public class Comment extends BasePojo{
     private String content;
 
     @Column
+    @Default("0")
     private int praise;
+
+    @Column
+    @Default("0")
+    private int comment;
+
+    @Column
+    private int status;
 
 
     public int getId() {
@@ -49,7 +56,7 @@ public class Comment extends BasePojo{
         this.id = id;
     }
 
-    public boolean isType() {
+    public boolean getType() {
         return type;
     }
 
@@ -95,5 +102,21 @@ public class Comment extends BasePojo{
 
     public void setPraise(int praise) {
         this.praise = praise;
+    }
+
+    public int getComment() {
+        return comment;
+    }
+
+    public void setComment(int comment) {
+        this.comment = comment;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
     }
 }
