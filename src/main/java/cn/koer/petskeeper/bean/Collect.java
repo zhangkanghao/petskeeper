@@ -9,7 +9,7 @@ import org.nutz.dao.entity.annotation.Table;
  * @Date 2020/2/21 22:29
  */
 @Table("t_collect")
-public class Collect extends BasePojo{
+public class Collect extends BasePojo {
 
     @Id
     @Column
@@ -21,8 +21,9 @@ public class Collect extends BasePojo{
     @Column("aid")
     private int articleId;
 
-    @Column("title")
-    private String articleTitle;
+    /**0取消收藏，2收藏*/
+    @Column
+    private int status;
 
     public int getId() {
         return id;
@@ -48,11 +49,11 @@ public class Collect extends BasePojo{
         this.articleId = articleId;
     }
 
-    public String getArticleTitle() {
-        return articleTitle;
+    public int getStatus() {
+        return status;
     }
 
-    public void setArticleTitle(String articleTitle) {
-        this.articleTitle = articleTitle;
+    public void setStatus(int status) {
+        this.status = status;
     }
 }
