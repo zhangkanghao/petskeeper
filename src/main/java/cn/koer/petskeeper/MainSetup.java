@@ -4,10 +4,14 @@ import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.service.UserService;
 import org.nutz.dao.Dao;
 import org.nutz.dao.util.Daos;
+import org.nutz.integration.jedis.JedisAgent;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;
 import org.nutz.ioc.Ioc;
+import org.nutz.log.Log;
+import org.nutz.log.Logs;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
+import redis.clients.jedis.Jedis;
 
 import java.util.Date;
 
@@ -25,6 +29,15 @@ public class MainSetup implements Setup {
             UserService us = ioc.get(UserService.class);
             us.add("admin", "123456");
         }
+        Log log= Logs.get();
+        JedisAgent jedisAgent = ioc.get(JedisAgent.class);
+        // Java7的语法
+        try (Jedis jedis = jedisAgent.getResource()) {
+            String re = jedis.set("_nutzbook_test_key", "http://nutzbook.wendal.net");
+            log.debug("redis say : " + re);
+            re = jedis.get("_nutzbook_test_key");
+            log.debug("redis say : " + re);
+        } finally {}
     }
 
     @Override
