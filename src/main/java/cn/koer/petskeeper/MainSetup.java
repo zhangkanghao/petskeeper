@@ -29,15 +29,6 @@ public class MainSetup implements Setup {
             UserService us = ioc.get(UserService.class);
             us.add("admin", "123456");
         }
-        Log log= Logs.get();
-        JedisAgent jedisAgent = ioc.get(JedisAgent.class);
-        // Java7的语法
-        try (Jedis jedis = jedisAgent.getResource()) {
-            String re = jedis.set("_nutzbook_test_key", "http://nutzbook.wendal.net");
-            log.debug("redis say : " + re);
-            re = jedis.get("_nutzbook_test_key");
-            log.debug("redis say : " + re);
-        } finally {}
     }
 
     @Override
