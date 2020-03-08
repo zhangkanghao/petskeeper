@@ -4,7 +4,6 @@ import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
 import cn.koer.petskeeper.service.UserService;
 import cn.koer.petskeeper.util.Toolkit;
-import org.apache.shiro.crypto.hash.Sha256Hash;
 import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
@@ -52,7 +51,7 @@ public class UserModule extends BaseModule {
             return re.setv("ok", false).setv("msg", "验证码错误");
         }
         User user = dao.fetch(User.class, Cnd.where("name", "=", username));
-        if (user == null||new Sha256Hash(password, user.getSalt()).toHex() == user.getPassword()) {
+        if (user == null||Toolkit.passwordEncode(password, user.getSalt()) == user.getPassword()) {
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             session.setAttribute("ident", user.getId());

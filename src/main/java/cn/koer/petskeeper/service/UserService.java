@@ -1,11 +1,12 @@
 package cn.koer.petskeeper.service;
 
 import cn.koer.petskeeper.bean.User;
-import org.apache.shiro.crypto.hash.Sha256Hash;
+import cn.koer.petskeeper.util.Toolkit;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.random.R;
 import org.nutz.service.IdNameEntityService;
 
+import javax.tools.Tool;
 import java.util.Date;
 
 /**
@@ -19,7 +20,7 @@ public class UserService extends IdNameEntityService<User> {
         User user = new User();
         user.setName(name.trim());
         user.setSalt(R.UU16());
-        user.setPassword(new Sha256Hash(password, user.getSalt()).toHex());
+        user.setPassword(Toolkit.passwordEncode(password, user.getSalt()));
         user.setCreateTime(new Date());
         user.setUpdateTime(new Date());
         return dao().insert(user);
@@ -30,7 +31,7 @@ public class UserService extends IdNameEntityService<User> {
         if (user == null) {
             return -1;
         }
-        String _pass = new Sha256Hash(password, user.getSalt()).toHex();
+        String _pass = Toolkit.passwordEncode(password, user.getSalt());
         if(_pass.equalsIgnoreCase(user.getPassword())) {
             return user.getId();
         }
@@ -43,7 +44,7 @@ public class UserService extends IdNameEntityService<User> {
             return;
         }
         user.setSalt(R.UU16());
-        user.setPassword(new Sha256Hash(password, user.getSalt()).toHex());
+        user.setPassword(Toolkit.passwordEncode(password, user.getSalt()));
         user.setUpdateTime(new Date());
         dao().update(user, "^(password|salt|updateTime)$");
     }
