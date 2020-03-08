@@ -7,8 +7,6 @@ import org.nutz.dao.util.Daos;
 import org.nutz.integration.jedis.JedisAgent;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;
 import org.nutz.ioc.Ioc;
-import org.nutz.log.Log;
-import org.nutz.log.Logs;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
 import redis.clients.jedis.Jedis;
@@ -28,6 +26,13 @@ public class MainSetup implements Setup {
         if (dao.count(User.class) == 0) {
             UserService us = ioc.get(UserService.class);
             us.add("admin", "123456");
+        }
+        JedisAgent jedisAgent=ioc.get(JedisAgent.class);
+        try {
+            Jedis jedis=jedisAgent.getResource();
+           String re=jedis.set("test","testssss");
+            System.out.println(re);
+        }finally {
         }
     }
 
