@@ -2,6 +2,7 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import cn.koer.petskeeper.service.UserService;
 import cn.koer.petskeeper.util.Toolkit;
 import org.nutz.aop.interceptor.ioc.TransAop;
@@ -15,7 +16,6 @@ import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
 
 import javax.servlet.http.HttpSession;
 
@@ -26,7 +26,7 @@ import javax.servlet.http.HttpSession;
 @At("/user")
 @Ok("json:{locked:'password',ignoreNull:true}")
 @Fail("http:500")
-@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class UserModule extends BaseModule {
 
     @Inject
