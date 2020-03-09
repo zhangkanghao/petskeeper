@@ -27,13 +27,6 @@ public class MainSetup implements Setup {
             UserService us = ioc.get(UserService.class);
             us.add("admin", "123456");
         }
-        JedisAgent jedisAgent=ioc.get(JedisAgent.class);
-        try {
-            Jedis jedis=jedisAgent.getResource();
-           String re=jedis.set("test","testssss");
-            System.out.println(re);
-        }finally {
-        }
     }
 
     @Override
