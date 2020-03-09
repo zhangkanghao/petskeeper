@@ -9,6 +9,7 @@ import org.nutz.aop.interceptor.ioc.TransAop;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
+import org.nutz.integration.jedis.RedisService;
 import org.nutz.ioc.aop.Aop;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
@@ -17,6 +18,7 @@ import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
 /**
@@ -31,6 +33,8 @@ public class UserModule extends BaseModule {
 
     @Inject
     protected UserService userService;
+    @Inject
+    protected RedisService redisService;
 
     @At("/")
     @Ok("jsp:jsp.user.list")
@@ -45,18 +49,15 @@ public class UserModule extends BaseModule {
     @At
     @Filters()
     @POST
-    public Object login(@Param("username") String username, @Param("password") String password, @Param("captcha") String captcha, @Attr(scope = Scope.SESSION, value = "nutz_captcha") String _captcha, HttpSession session) {
+    public Object login(@Param("username") String username, @Param("password") String password, HttpServletRequest request) {
         NutMap re = new NutMap();
-        if (!Toolkit.checkCaptcha(_captcha, captcha)) {
-            return re.setv("ok", false).setv("msg", "验证码错误");
-        }
         User user = dao.fetch(User.class, Cnd.where("name", "=", username));
         if (user == null||Toolkit.passwordEncode(password, user.getSalt()) == user.getPassword()) {
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
-            session.setAttribute("ident", user.getId());
-            session.setAttribute("User",user);
-            return re.setv("ok", true);
+            String token=Toolkit.genToken(user.getId(),username,user.getSalt());
+            redisService.set(token,String.valueOf(user.getId()));
+            return re.setv("ok", true).setv("auth",token);
         }
     }
 
