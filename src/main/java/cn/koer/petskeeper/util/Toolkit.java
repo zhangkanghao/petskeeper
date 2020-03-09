@@ -98,4 +98,9 @@ public class Toolkit {
         }
         return re;
     }
+
+    public static String genToken(int userId,String username,String salt){
+        String info=salt+","+String.valueOf(userId)+","+username+","+System.currentTimeMillis();
+        return Lang.digest("SHA-256",info);
+    }
 }
