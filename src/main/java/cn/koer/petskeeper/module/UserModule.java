@@ -49,10 +49,10 @@ public class UserModule extends BaseModule {
     @At
     @Filters()
     @POST
-    public Object login(@Param("username") String username, @Param("password") String password, HttpServletRequest request) {
+    public Object login(@Param("username") String username, @Param("password") String password) {
         NutMap re = new NutMap();
         User user = dao.fetch(User.class, Cnd.where("name", "=", username));
-        if (user == null||Toolkit.passwordEncode(password, user.getSalt()) == user.getPassword()) {
+        if (user==null||!user.getPassword().equals(Toolkit.passwordEncode(password,user.getSalt()))) {
             return re.setv("ok", false).setv("msg", "用户名或密码错误");
         } else {
             String token=Toolkit.genToken(user.getId(),username,user.getSalt());
@@ -62,9 +62,9 @@ public class UserModule extends BaseModule {
     }
 
     @At
-    @Ok(">>:/")
-    public void logout(HttpSession session) {
-        session.invalidate();
+    public void logout(HttpServletRequest request) {
+        String token=request.getHeader("authorization");
+        redisService.del(token);
     }
 
     @At
