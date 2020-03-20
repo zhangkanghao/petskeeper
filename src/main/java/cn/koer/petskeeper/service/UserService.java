@@ -46,6 +46,7 @@ public class UserService extends IdNameEntityService<User> {
         user.setSalt(R.UU16());
         user.setPassword(Toolkit.passwordEncode(password, user.getSalt()));
         user.setUpdateTime(new Date());
-        dao().update(user, "^(password|salt|updateTime)$");
+        user.setDescription("");
+        dao().update(user, "^(password|salt|updateTime|description)$");
     }
 }

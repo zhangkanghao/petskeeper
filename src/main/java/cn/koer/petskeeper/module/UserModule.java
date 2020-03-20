@@ -6,6 +6,7 @@ import cn.koer.petskeeper.filter.CheckTokenFilter;
 import cn.koer.petskeeper.service.UserService;
 import cn.koer.petskeeper.util.Toolkit;
 import org.nutz.aop.interceptor.ioc.TransAop;
+import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
@@ -14,6 +15,7 @@ import org.nutz.ioc.aop.Aop;
 import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
+import org.nutz.lang.random.R;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
@@ -67,7 +69,6 @@ public class UserModule extends BaseModule {
         redisService.del(token);
     }
 
-    @At
     protected String checkUser(User user, boolean create) {
         if (user == null) {
             return "空对象";
@@ -106,6 +107,7 @@ public class UserModule extends BaseModule {
      * 添加
      */
     @At
+    @Filters()
     public Object add(@Param("..") User user) {
         NutMap re = new NutMap();
         String msg = checkUser(user, true);
@@ -128,6 +130,48 @@ public class UserModule extends BaseModule {
         return new NutMap().setv("ok", true);
     }
 
+    @At
+    @Filters()
+    public Object resetCode(@Param("username")String username) {
+        NutMap re = new NutMap();
+        User user=dao.fetch(User.class,username);
+        if(user==null){
+            return re.setv("ok", false).setv("msg", "用户不存在");
+        }
+        UserProfile profile=dao.fetch(UserProfile.class,user.getId());
+        if (profile==null||!profile.isEmailChecked()){
+            return re.setv("ok", false).setv("msg", "未绑定邮箱");
+        }
+        String verifyCode=Toolkit.rePwdCheck();
+        String html = profile.getNickname()+",你好,这是你修改密码所需要的验证码："+ verifyCode+"<br>如果不是本人操作请忽视";
+        try {
+            boolean ok = emailService.send(profile.getEmail(), "验证邮件 by Petskeeper", html);
+            if (!ok) {
+                return re.setv("ok", false).setv("msg", "发送失败");
+            }
+        } catch (Throwable e) {
+            return re.setv("ok", false).setv("msg", "发送失败");
+        }
+        user.setDescription(verifyCode);
+        dao.update(user);
+        return re.setv("ok", true);
+    }
+
+    @At
+    @Filters()
+    @POST
+    public Object resetpwd(@Param("username")String username,@Param("password")String newpwd,@Param("verifyCode")String vCode) {
+        NutMap re = new NutMap();
+        User user=dao.fetch(User.class,username);
+        if(user==null||user.getDescription()==null||Strings.isBlank(user.getDescription())){
+            return re.setv("ok",false).setv("msg","用户不存在或未获取验证码");
+        }
+        if(!user.getDescription().equals(vCode)){
+            return re.setv("ok",false).setv("msg","验证码错误");
+        }
+        userService.updatePassword(user.getId(),newpwd);
+        return re.setv("ok",true).setv("msg","修改成功");
+    }
     /**
      * 删除，@Attr是session.getAttribute()
      *

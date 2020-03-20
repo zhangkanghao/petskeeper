@@ -11,6 +11,7 @@ import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.util.Random;
 
 /**
  * 2 * @Author: Koer
@@ -102,5 +103,15 @@ public class Toolkit {
     public static String genToken(int userId,String username,String salt){
         String info=salt+","+String.valueOf(userId)+","+username+","+System.currentTimeMillis();
         return Lang.digest("SHA-256",info);
+    }
+
+    public static String rePwdCheck() {
+        String str = "0123456789";
+        String uuid = new String();
+        for (int i = 0; i < 4; i++) {
+            char ch = str.charAt(new Random().nextInt(str.length()));
+            uuid += ch;
+        }
+        return uuid;
     }
 }

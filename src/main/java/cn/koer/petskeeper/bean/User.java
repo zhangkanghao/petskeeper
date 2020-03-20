@@ -22,6 +22,8 @@ public class User extends BasePojo{
     private String password;
     @Column
     private String salt;
+    @Column
+    private String description;
     /**与userprofile一对一关联*/
     @One(target=UserProfile.class, field="id", key="userId")
     protected UserProfile profile;
@@ -58,6 +60,14 @@ public class User extends BasePojo{
 
     public void setSalt(String salt) {
         this.salt = salt;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public UserProfile getProfile() {

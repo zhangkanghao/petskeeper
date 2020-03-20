@@ -36,6 +36,7 @@ public class CaptchaModule {
                 .build();
         String text = captcha.getAnswer();
         session.setAttribute(Toolkit.captcha_attr, text);
+        System.out.println(text);
         return captcha.getImage();
     }
 }
