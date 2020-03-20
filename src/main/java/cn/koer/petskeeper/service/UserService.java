@@ -6,7 +6,6 @@ import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.random.R;
 import org.nutz.service.IdNameEntityService;
 
-import javax.tools.Tool;
 import java.util.Date;
 
 /**

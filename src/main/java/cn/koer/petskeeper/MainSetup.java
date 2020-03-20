@@ -4,12 +4,10 @@ import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.service.UserService;
 import org.nutz.dao.Dao;
 import org.nutz.dao.util.Daos;
-import org.nutz.integration.jedis.JedisAgent;
 import org.nutz.integration.quartz.NutQuartzCronJobFactory;
 import org.nutz.ioc.Ioc;
 import org.nutz.mvc.NutConfig;
 import org.nutz.mvc.Setup;
-import redis.clients.jedis.Jedis;
 
 import java.util.Date;
 

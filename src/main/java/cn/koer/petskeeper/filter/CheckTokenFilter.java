@@ -1,6 +1,7 @@
 package cn.koer.petskeeper.filter;
 
-import org.nutz.ioc.aop.Aop;
+import org.nutz.integration.jedis.RedisService;
+import org.nutz.ioc.loader.annotation.Inject;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.ActionContext;
@@ -11,14 +12,15 @@ import org.nutz.mvc.view.UTF8JsonView;
 
 import javax.servlet.http.HttpServletRequest;
 
-import static org.nutz.integration.jedis.RedisInterceptor.jedis;
 
 public class CheckTokenFilter implements ActionFilter {
 
+    @Inject
+    protected RedisService redisService;
 
     @Override
-    @Aop("redis")
     public View match(ActionContext actionContext) {
+        RedisService redisService=Mvcs.getIoc().get(RedisService.class);
         HttpServletRequest request= Mvcs.getReq();
         String token=request.getHeader("authorization");
         NutMap re=new NutMap();
@@ -26,7 +28,7 @@ public class CheckTokenFilter implements ActionFilter {
             re.setv("ok",false).setv("errMsg","请先登录");
             return new UTF8JsonView().setData(re);
         }
-        String uid=jedis().get(token);
+        String uid=redisService.get(token);
         if(uid==null||Strings.isBlank(uid)){
             re.setv("errMsg","登录超时，请重新登录");
             return new UTF8JsonView().setData(re);

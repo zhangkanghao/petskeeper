@@ -1,6 +1,7 @@
 package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import cn.koer.petskeeper.util.Toolkit;
 import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
@@ -37,33 +38,33 @@ import java.util.Date;
  */
 @At("/user/profile")
 @IocBean
-/**检查session是否有ident*/
-@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class UserProfileModule extends BaseModule {
 
     public static final Log log= Logs.get();
     public static final int TOKEN_LENGTH=10;
 
     @At("/")
-    @Ok("jsp:jsp.user.profile")
     @GET
-    public UserProfile index(@Attr(scope = Scope.SESSION,value = "ident")int userId){
+    public UserProfile index(HttpServletRequest req){
+        int userId= (int) req.getAttribute("uid");
         return get(userId);
     }
 
     /**
      * 获取用户详情
      *
-     * @param userId 写在session里的
      * @return
      */
     @At
-    public UserProfile get(@Attr(scope = Scope.SESSION, value = "ident") int userId) {
-        UserProfile profile = Daos.ext(dao, FieldFilter.locked(UserProfile.class, "avatar")).fetch(UserProfile.class, userId);
+    public UserProfile get(int userId) {
+//        UserProfile profile = Daos.ext(dao, FieldFilter.locked(UserProfile.class, "avatar")).fetch(UserProfile.class, userId);
+        UserProfile profile=dao.fetch(UserProfile.class,userId);
         /**新用户  则新建详情页*/
         if (profile == null) {
             profile = new UserProfile();
             profile.setUserId(userId);
+            profile.setNickname("新用户"+userId);
             profile.setCreateTime(new Date());
             profile.setUpdateTime(new Date());
             dao.insert(profile);

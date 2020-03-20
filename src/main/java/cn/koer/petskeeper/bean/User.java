@@ -1,10 +1,6 @@
 package cn.koer.petskeeper.bean;
 
 import org.nutz.dao.entity.annotation.*;
-import org.nutz.lang.random.R;
-
-import java.util.Date;
-import java.util.List;
 
 /**
  * 2 * @Author: Koer
