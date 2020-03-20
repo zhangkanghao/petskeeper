@@ -1,5 +1,6 @@
 package cn.koer.petskeeper.module;
 
+import cn.koer.petskeeper.bean.Praise;
 import cn.koer.petskeeper.bean.UserProfile;
 import cn.koer.petskeeper.filter.CheckTokenFilter;
 import cn.koer.petskeeper.util.Toolkit;
@@ -73,11 +74,11 @@ public class UserProfileModule extends BaseModule {
     }
 
     @At
-    @AdaptBy(type = JsonAdaptor.class)
-    @Ok("void")
-    public void update(@Param("..") UserProfile profile, @Attr(scope = Scope.SESSION, value = "ident") int userId) {
+//    @AdaptBy(type = JsonAdaptor.class)
+    public Object update(@Param("..") UserProfile profile, HttpServletRequest req) {
+        int userId= (int) req.getAttribute("uid");
         if (profile == null) {
-            return;
+            return new NutMap().setv("ok",false).setv("msg","用户不存在");
         }
         /**
          * 重置userid 防止恶意修改
@@ -86,36 +87,38 @@ public class UserProfileModule extends BaseModule {
         profile.setUserId(userId);
         profile.setUpdateTime(new Date());
         profile.setAvatar(null);
-        UserProfile old=get(userId);
-        /**检查email相关的更新*/
-        if(old.getEmail()==null){
-            /**原先没有邮箱，就算设置了邮箱也是未check状态*/
-            profile.setEmailChecked(false);
-        }else {
-            if(profile.getEmail()==null){
-                profile.setEmail(old.getEmail());
-                profile.setEmailChecked(old.isEmailChecked());
-            }else if (!profile.getEmail().equals(old.getEmail())){
-                profile.setEmailChecked(false);
-            }else {
-                profile.setEmailChecked(old.isEmailChecked());
-            }
-        }
+//        UserProfile old=get(userId);
+//        /**检查email相关的更新*/
+//        if(old.getEmail()==null){
+//            /**原先没有邮箱，就算设置了邮箱也是未check状态*/
+//            profile.setEmailChecked(false);
+//        }else {
+//            if(profile.getEmail()==null){
+//                profile.setEmail(old.getEmail());
+//                profile.setEmailChecked(old.isEmailChecked());
+//            }else if (!profile.getEmail().equals(old.getEmail())){
+//                profile.setEmailChecked(false);
+//            }else {
+//                profile.setEmailChecked(old.isEmailChecked());
+//            }
+//        }
         Daos.ext(dao,FieldFilter.create(UserProfile.class,null,"avatar",true)).update(profile);
+        return new NutMap().setv("ok",true).setv("msg","成功");
     }
 
-    @AdaptBy(type = UploadAdaptor.class,args={"${app.root}/WEB-INF/tmp/user_avatar", "8192", "utf-8", "20000", "102400"})
+    @AdaptBy(type = UploadAdaptor.class,args={"${app.root}/WEB-INF/tmp/user_avatar", "8192", "utf-8", "20000", "1024000"})
     @At("/avatar")
     @POST
-    @Ok(">>:/user/profile")
-    public void uploadAvatar(@Param("file")TempFile tf, @Attr(scope = Scope.SESSION,value = "ident")int userId, AdaptorErrorContext err){
+    public Object uploadAvatar(@Param("file")TempFile tf, HttpServletRequest req, AdaptorErrorContext err){
+        int userId= (int) req.getAttribute("uid");
         String msg=null;
+        UserProfile profile = null;
         if(err!=null&&err.getAdaptorErr()!=null) {
             msg = "文件大小不符合规定";
         }else if(tf==null){
             msg="空文件";
         }else{
-            UserProfile profile=get(userId);
+            profile=get(userId);
             try (InputStream ins = tf.getInputStream()) {
                 BufferedImage image = Images.read(ins);
                 image = Images.zoomScale(image, 128, 128, Color.WHITE);
@@ -131,15 +134,17 @@ public class UserProfileModule extends BaseModule {
             }
         }
         if(msg!=null){
-            Mvcs.getHttpSession().setAttribute("upload-error-msg",msg);
+            return new NutMap().setv("ok",false).setv("msg",msg);
         }
+        return profile.getAvatar();
     }
 
     @Ok("raw:jpg")
     @At("/avatar")
+    @Filters()
     @GET
-    public Object readAvatar(@Param("userId") int userId, HttpServletRequest req){
-        UserProfile profile= Daos.ext(dao,FieldFilter.create(UserProfile.class,"^avatar$")).fetch(UserProfile.class,userId);
+    public Object readAvatar(@Param("userId")int userId,HttpServletRequest req){
+        UserProfile profile= Daos.ext(dao,FieldFilter.create(UserProfile.class,"^avatar$")).fetch(UserProfile.class, userId);
         if(profile==null||profile.getAvatar()==null){
             return new File(req.getServletContext().getRealPath("/rs/user_avatar/none.jpg"));
         }
@@ -151,13 +156,11 @@ public class UserProfileModule extends BaseModule {
      */
     @At("/active/mail")
     @POST
-    public Object activeMail(@Attr(scope=Scope.SESSION, value="ident")int userId, HttpServletRequest req) {
+    public Object activeMail(HttpServletRequest req,@Param("email")String email) {
+        int userId= (int) req.getAttribute("uid");
         NutMap re = new NutMap();
         UserProfile profile = get(userId);
-        if (Strings.isBlank(profile.getEmail())) {
-            return re.setv("ok", false).setv("msg", "你还没有填邮箱啊!");
-        }
-        String token = String.format("%s,%s,%s", userId, profile.getEmail(), System.currentTimeMillis());
+        String token = String.format("%s,%s,%s", userId, email, System.currentTimeMillis());
         token = Toolkit._3DES_encode(emailKEY, token.getBytes());
         String url = req.getRequestURL() + "?token=" + token;
         String html = "<div>如果无法点击,请拷贝一下链接到浏览器中打开 验证链接:<a href=\"%s\"> %s</a></div>";
@@ -175,16 +178,14 @@ public class UserProfileModule extends BaseModule {
     }
 
     /**
-     * 不需要先登录,为了简单起见,这里直接显示验证结果就好了,后面改成跳转页或者验证成功提示页
      * @param token
-     * @param session
      * @return
      */
-    @Filters
     @At("/active/mail")
     @GET
     @Ok("raw")
-    public String activeMailCallback(@Param("token")String token, HttpSession session) {
+    @Filters()
+    public String activeMailCallback(@Param("token")String token) {
         if (Strings.isBlank(token)) {
             return "请不要直接访问这个链接!!!";
         }
@@ -205,9 +206,10 @@ public class UserProfileModule extends BaseModule {
                 return "该验证链接已经超时";
             }
             int userId = Integer.parseInt(tmp[0]);
-            Cnd cnd = Cnd.where("userId", "=", userId).and("email", "=", tmp[1]);
+            Cnd cnd = Cnd.where("userId", "=", userId);
+            int re1=dao.update(UserProfile.class, Chain.make("email",tmp[1]), cnd);
             int re = dao.update(UserProfile.class, Chain.make("emailChecked",true), cnd);
-            if (re == 1) {
+            if (re == 1&&re1==1) {
                 return "验证成功";
             }
             return "验证失败!!请重新验证!!";
