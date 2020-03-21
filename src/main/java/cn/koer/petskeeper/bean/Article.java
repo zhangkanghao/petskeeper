@@ -1,9 +1,6 @@
 package cn.koer.petskeeper.bean;
 
-import org.nutz.dao.entity.annotation.Column;
-import org.nutz.dao.entity.annotation.Default;
-import org.nutz.dao.entity.annotation.Id;
-import org.nutz.dao.entity.annotation.Table;
+import org.nutz.dao.entity.annotation.*;
 
 /**
  * @Author Koer
@@ -20,23 +17,19 @@ public class Article extends BasePojo{
     @Column("uid")
     private int userId;
 
-    /**发帖人昵称*/
-    @Column
-    @Default("匿名")
-    private String nickname;
-
     @Column
     private String subject;
 
-    /**求助/分享/科普*/
+    /**文章/动态/视频*/
     @Column
     private String type;
 
-    /**私密/公开/关注可见*/
+    /**私密/公开*/
     @Column
-    private String readType;
+    private boolean readType;
 
     @Column
+    @ColDefine(type = ColType.TEXT)
     private String content;
 
     /**浏览数*/
@@ -60,7 +53,7 @@ public class Article extends BasePojo{
 
     /**状态：草稿、发布*/
     @Column
-    private int status;
+    private boolean status;
 
 
     public int getId() {
@@ -79,14 +72,6 @@ public class Article extends BasePojo{
         this.userId = userId;
     }
 
-    public String getNickname() {
-        return nickname;
-    }
-
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
-
     public String getSubject() {
         return subject;
     }
@@ -103,11 +88,11 @@ public class Article extends BasePojo{
         this.type = type;
     }
 
-    public String getReadType() {
+    public boolean isReadType() {
         return readType;
     }
 
-    public void setReadType(String readType) {
+    public void setReadType(boolean readType) {
         this.readType = readType;
     }
 
@@ -151,11 +136,11 @@ public class Article extends BasePojo{
         this.annoymous = annoymous;
     }
 
-    public int getStatus() {
+    public boolean isStatus() {
         return status;
     }
 
-    public void setStatus(int status) {
+    public void setStatus(boolean status) {
         this.status = status;
     }
 }

@@ -2,16 +2,28 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Article;
 import cn.koer.petskeeper.bean.User;
+import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Condition;
+import org.nutz.dao.DaoException;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
+import org.nutz.img.Images;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.random.R;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
+import org.nutz.mvc.impl.AdaptorErrorContext;
+import org.nutz.mvc.upload.TempFile;
+import org.nutz.mvc.upload.UploadAdaptor;
 
+import javax.servlet.http.HttpServletRequest;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.InputStream;
 import java.util.Date;
 
 /**
@@ -20,13 +32,8 @@ import java.util.Date;
  */
 @At("/article")
 @IocBean
-@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class ArticleModule extends BaseModule{
-
-    @At("/")
-    @Ok("jsp:jsp.article.test")
-    public void index(){
-    }
 
 
     @At
@@ -34,25 +41,17 @@ public class ArticleModule extends BaseModule{
         return dao.fetch(Article.class,articleId);
     }
 
-    /**
-     * 发布或者编辑到草稿箱  根据status来定
-     * @param article
-     * @return
-     */
+
     @At
-    public Object save(@Param("..")Article article,@Attr(scope = Scope.SESSION,value = "User") User user){
+    public Object publish(@Param("..")Article article,HttpServletRequest req){
         NutMap re=new NutMap();
-        if(article.getSubject().length()<5){
-            return re.setv("ok",false).setv("msg","标题不能少于5个字");
-        }
-        if(!article.isAnnoymous()){
-            article.setNickname(user.getName());
-        }
+        int userId= (int) req.getAttribute("uid");
+        UserProfile profile=dao.fetch(UserProfile.class,userId);
         article.setUpdateTime(new Date());
         //新建的
         if(article.getId()==0){
             article.setCreateTime(new Date());
-            article.setUserId(user.getId());
+            article.setUserId(userId);
             dao.insert(article);
         }else {
             dao.update(article);
@@ -118,4 +117,40 @@ public class ArticleModule extends BaseModule{
         return qr;
     }
 
+
+
+    @At("/addPic")
+    @POST
+    @AdaptBy(type = UploadAdaptor.class,args={"${app.root}/WEB-INF/tmp/release", "8192", "utf-8", "20000", "10485760"})
+    public Object uploadPic(@Param("file") TempFile tf, HttpServletRequest req,AdaptorErrorContext err){
+        NutMap re=new NutMap();
+        String msg=null;
+        String path = null;
+        if(err!=null&&err.getAdaptorErr()!=null) {
+            msg = "文件大小不符合规定";
+        }else if(tf==null){
+            msg="空文件";
+        }else{
+            try (InputStream ins = tf.getInputStream()) {
+                BufferedImage image = Images.read(ins);
+                image = Images.zoomScale(image, 512, 512, Color.WHITE);
+                String basepath=req.getServletContext().getRealPath("articleImg/release/");
+                File directory = new File(basepath);
+                if (!directory.exists()) {
+                    directory.mkdirs();
+                }
+                path=R.UU16();
+                Images.writeJpeg(image, new File(basepath+ path+".jpg"), 0.8f);
+            } catch(DaoException e) {
+                e.printStackTrace();
+                msg = "系统错误";
+            } catch (Throwable e) {
+                msg = "图片格式错误";
+            }
+        }
+        if(msg!=null){
+            return re.setv("ok",false).setv("msg",msg);
+        }
+        return re.setv("ok",true).setv("path","/articleImg/release/"+path+".jpg");
+    }
 }

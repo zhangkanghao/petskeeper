@@ -143,7 +143,7 @@ public class UserProfileModule extends BaseModule {
         String html = "<div>如果无法点击,请拷贝一下链接到浏览器中打开 验证链接:<a href=\"%s\"> %s</a></div>";
         html = String.format(html, url, url);
         try {
-            boolean ok = emailService.send(profile.getEmail(), "验证邮件 by Petskeeper", html);
+            boolean ok = emailService.send(email, "验证邮件 by Petskeeper", html);
             if (!ok) {
                 return re.setv("ok", false).setv("msg", "发送失败");
             }
