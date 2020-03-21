@@ -1,14 +1,17 @@
 package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Article;
-import cn.koer.petskeeper.bean.User;
 import cn.koer.petskeeper.bean.UserProfile;
 import cn.koer.petskeeper.filter.CheckTokenFilter;
-import org.nutz.dao.Cnd;
-import org.nutz.dao.Condition;
-import org.nutz.dao.DaoException;
-import org.nutz.dao.QueryResult;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import org.nutz.dao.*;
+import org.nutz.dao.entity.Entity;
+import org.nutz.dao.entity.Record;
 import org.nutz.dao.pager.Pager;
+import org.nutz.dao.sql.Sql;
+import org.nutz.dao.sql.SqlCallback;
+import org.nutz.dao.util.Daos;
 import org.nutz.img.Images;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.random.R;
@@ -24,7 +27,12 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @Author Koer
@@ -100,23 +108,42 @@ public class ArticleModule extends BaseModule{
         return qr;
     }
 
-    /**
-     * 首页上新动态，一天内的
-     * @param pager
-     * @return
-     */
-    @At
-    public Object queryList(@Param("..") Pager pager){
-        Date publishTime = new Date(System.currentTimeMillis() - 24*60*60*1000L);
-        Condition cnd=Cnd.where("ut",">",publishTime).and("status","=","1").desc("ut");
-        QueryResult qr = new QueryResult();
-        qr.setList(dao.query(Article.class, cnd, pager));
-        pager.setRecordCount(dao.count(Article.class, cnd));
-        qr.setPager(pager);
-        //默认分页是第1页,每页20条
-        return qr;
+
+    private SqlCallback getCallback(){
+        return new SqlCallback() {
+            @Override
+            public Object invoke(Connection conn, ResultSet rs, Sql sql) throws SQLException {
+                List<JSONObject> list= new ArrayList<>();
+                while(rs.next()){
+                    JSONObject obj=new JSONObject();
+                    obj.put("id",rs.getInt("id"));
+                    obj.put("nickname",rs.getString("nickname"));
+                    obj.put("content",rs.getString("content"));
+                    obj.put("praise",rs.getInt("praise"));
+                    obj.put("userId",rs.getInt("uid"));
+                    obj.put("targetId",rs.getInt("targetId"));
+                    list.add(obj);
+                }
+                return list;
+            }
+        };
     }
 
+    @At("/")
+    public Object homepageArticle(HttpServletRequest req,@Param("..") Pager pager) {
+        int userId= (int) req.getAttribute("uid");
+        Sql sql= Sqls.create("SELECT a.id,a.uid,content,a.praise,up.nickname,targetId FROM t_article a LEFT JOIN t_user_profile up on a.uid=up.uid LEFT JOIN (SELECT * from t_praise where userId=@userId AND type=0) p ON p.targetId=a.id WHERE to_days(a.ut)=to_days(NOW()) and a.`status`=1 ORDER BY a.ut ASC");
+        sql.setParam("userId",userId);
+        pager.setRecordCount((int) Daos.queryCount(dao,sql));
+        sql.setPager(pager);
+        sql.setCallback(getCallback());
+        Entity<Record> entity = dao.getEntity(Record.class);
+        sql.setEntity(entity);
+        dao.execute(sql);
+        System.out.println(pager.getPageCount()+","+pager.getRecordCount());
+        List<Record> articles = sql.getList(Record.class);
+        return articles;
+    }
 
 
     @At("/addPic")
@@ -153,4 +180,6 @@ public class ArticleModule extends BaseModule{
         }
         return re.setv("ok",true).setv("path","/articleImg/release/"+path+".jpg");
     }
+
+
 }

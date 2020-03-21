@@ -7,6 +7,7 @@ import org.nutz.dao.entity.annotation.*;
  * @Date 2020/2/21 19:19
  */
 @Table("t_article")
+@TableMeta("{'mysql-charset':'utf8mb4'}")
 public class Article extends BasePojo{
 
     @Id
