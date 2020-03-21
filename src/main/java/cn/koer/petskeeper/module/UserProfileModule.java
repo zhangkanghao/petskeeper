@@ -1,6 +1,5 @@
 package cn.koer.petskeeper.module;
 
-import cn.koer.petskeeper.bean.Praise;
 import cn.koer.petskeeper.bean.UserProfile;
 import cn.koer.petskeeper.filter.CheckTokenFilter;
 import cn.koer.petskeeper.util.Toolkit;
@@ -15,17 +14,12 @@ import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.log.Log;
 import org.nutz.log.Logs;
-import org.nutz.mvc.Mvcs;
-import org.nutz.mvc.Scope;
-import org.nutz.mvc.adaptor.JsonAdaptor;
 import org.nutz.mvc.annotation.*;
-import org.nutz.mvc.filter.CheckSession;
 import org.nutz.mvc.impl.AdaptorErrorContext;
 import org.nutz.mvc.upload.TempFile;
 import org.nutz.mvc.upload.UploadAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -59,7 +53,6 @@ public class UserProfileModule extends BaseModule {
      */
     @At
     public UserProfile get(int userId) {
-//        UserProfile profile = Daos.ext(dao, FieldFilter.locked(UserProfile.class, "avatar")).fetch(UserProfile.class, userId);
         UserProfile profile=dao.fetch(UserProfile.class,userId);
         /**新用户  则新建详情页*/
         if (profile == null) {
@@ -74,7 +67,6 @@ public class UserProfileModule extends BaseModule {
     }
 
     @At
-//    @AdaptBy(type = JsonAdaptor.class)
     public Object update(@Param("..") UserProfile profile, HttpServletRequest req) {
         int userId= (int) req.getAttribute("uid");
         if (profile == null) {
@@ -87,21 +79,6 @@ public class UserProfileModule extends BaseModule {
         profile.setUserId(userId);
         profile.setUpdateTime(new Date());
         profile.setAvatar(null);
-//        UserProfile old=get(userId);
-//        /**检查email相关的更新*/
-//        if(old.getEmail()==null){
-//            /**原先没有邮箱，就算设置了邮箱也是未check状态*/
-//            profile.setEmailChecked(false);
-//        }else {
-//            if(profile.getEmail()==null){
-//                profile.setEmail(old.getEmail());
-//                profile.setEmailChecked(old.isEmailChecked());
-//            }else if (!profile.getEmail().equals(old.getEmail())){
-//                profile.setEmailChecked(false);
-//            }else {
-//                profile.setEmailChecked(old.isEmailChecked());
-//            }
-//        }
         Daos.ext(dao,FieldFilter.create(UserProfile.class,null,"avatar",true)).update(profile);
         return new NutMap().setv("ok",true).setv("msg","成功");
     }
