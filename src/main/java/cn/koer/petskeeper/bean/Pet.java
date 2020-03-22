@@ -1,10 +1,13 @@
 package cn.koer.petskeeper.bean;
 
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import org.nutz.dao.entity.annotation.Column;
 import org.nutz.dao.entity.annotation.Default;
 import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
 import org.nutz.json.JsonField;
+import org.nutz.mvc.annotation.By;
+import org.nutz.mvc.annotation.Filters;
 
 import java.util.Date;
 
@@ -42,7 +45,7 @@ public class Pet extends BasePojo {
 
     @Column()
     @JsonField(ignore = true)
-    private Byte[] pic;
+    private byte[] pic;
 
     @Column("dt")
     private String description;
@@ -115,11 +118,11 @@ public class Pet extends BasePojo {
         this.sterilized = sterilized;
     }
 
-    public Byte[] getPic() {
+    public byte[] getPic() {
         return pic;
     }
 
-    public void setPic(Byte[] pic) {
+    public void setPic(byte[] pic) {
         this.pic = pic;
     }
 

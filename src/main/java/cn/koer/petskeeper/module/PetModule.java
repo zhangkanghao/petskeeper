@@ -1,16 +1,31 @@
 package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Pet;
+import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import org.nutz.dao.Cnd;
+import org.nutz.dao.DaoException;
+import org.nutz.dao.FieldFilter;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.pager.Pager;
+import org.nutz.dao.util.Daos;
+import org.nutz.img.Images;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
+import org.nutz.mvc.impl.AdaptorErrorContext;
+import org.nutz.mvc.upload.TempFile;
+import org.nutz.mvc.upload.UploadAdaptor;
 
+import javax.servlet.http.HttpServletRequest;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
 import java.util.Date;
 
 /**
@@ -19,17 +34,10 @@ import java.util.Date;
  */
 @IocBean
 @At("/pet")
-@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class PetModule extends BaseModule {
 
 
-
-    @At("/")
-    @Ok("jsp:jsp.pet.list")
-    public void index(){
-    }
-
-    @At
     protected String checkPet(Pet pet) {
         if (pet == null) {
             return "空对象";
@@ -59,8 +67,15 @@ public class PetModule extends BaseModule {
     }
 
     @At
-    public Object add(@Param("..") Pet pet,@Attr(scope = Scope.SESSION,value = "ident")int userId) {
+    public Object get(@Param("petId")int petId){
+        Pet pet=dao.fetch(Pet.class,Cnd.where("id","=",petId));
+        return pet;
+    }
+
+    @At
+    public Object add(@Param("..") Pet pet, HttpServletRequest req) {
         NutMap re = new NutMap();
+        int userId= (int) req.getAttribute("uid");
         pet.setUserId(userId);
         String msg=checkPet(pet);
         if(msg!=null){
@@ -71,6 +86,50 @@ public class PetModule extends BaseModule {
         dao.insert(pet);
         return re.setv("ok",true).setv("data",pet);
 
+    }
+
+    @AdaptBy(type = UploadAdaptor.class,args={"${app.root}/WEB-INF/tmp/pet_avatar", "8192", "utf-8", "20000", "1024000"})
+    @At("/avatar")
+    @POST
+    public Object uploadAvatar(@Param("file") TempFile tf, AdaptorErrorContext err,@Param("petId")int petId){
+        String msg=null;
+        Pet pet = null;
+        if(err!=null&&err.getAdaptorErr()!=null) {
+            msg = "文件大小不符合规定";
+        }else if(tf==null){
+            msg="空文件";
+        }else{
+            pet= (Pet) get(petId);
+            try (InputStream ins = tf.getInputStream()) {
+                BufferedImage image = Images.read(ins);
+                image = Images.zoomScale(image, 128, 128, Color.WHITE);
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                Images.writeJpeg(image, out, 0.8f);
+                pet.setPic(out.toByteArray());
+                dao.update(pet, "^pic$");
+            } catch(DaoException e) {
+                e.printStackTrace();
+                msg = "系统错误";
+            } catch (Throwable e) {
+                msg = "图片格式错误";
+            }
+        }
+        if(msg!=null){
+            return new NutMap().setv("ok",false).setv("msg",msg);
+        }
+        return pet.getPic();
+    }
+
+    @Ok("raw:jpg")
+    @At("/avatar")
+    @Filters()
+    @GET
+    public Object readAvatar(@Param("petId")int petId,HttpServletRequest req){
+        Pet pet= Daos.ext(dao, FieldFilter.create(Pet.class,"^pic$")).fetch(Pet.class, petId);
+        if(pet==null||pet.getPic()==null){
+            return new File(req.getServletContext().getRealPath("/rs/user_avatar/none.jpg"));
+        }
+        return pet.getPic();
     }
 
     @At
@@ -87,8 +146,9 @@ public class PetModule extends BaseModule {
     }
 
     @At
-    public Object update(@Param("..")Pet pet,@Attr(scope = Scope.SESSION,value = "ident")int userId){
+    public Object update(@Param("..")Pet pet,HttpServletRequest req){
         NutMap re=new NutMap();
+        int userId= (int) req.getAttribute("uid");
         pet.setUserId(userId);
         String msg=checkPet(pet);
         if(msg!=null){
@@ -99,31 +159,16 @@ public class PetModule extends BaseModule {
         return re.setv("ok",true).setv("data",pet);
     }
 
-    @At
-    public Object get(@Param("petId")int petId){
-        return dao.fetch(Pet.class,Cnd.where("id","=",petId));
-    }
+
 
     /**
      * 我的宠物
-     * @param userId
-     * @param pager
-     * @return
+     * @return list
      */
     @At
-    public Object query(@Attr(scope = Scope.SESSION,value = "ident")int userId, @Param("..")Pager pager){
-        Cnd cnd=userId==0?null:Cnd.where("uid","=",userId);
-        int count=dao.count(Pet.class,cnd);
-        System.out.println(count);
-        if (count==0){
-            return new NutMap().setv("ok",false).setv("msg","宠物列表为空");
-        }
-        QueryResult qr = new QueryResult();
-        qr.setList(dao.query(Pet.class, cnd, pager));
-        pager.setRecordCount(count);
-        qr.setPager(pager);
-        //默认分页是第1页,每页20条
-        return qr;
+    public Object query(HttpServletRequest req){
+        int userId= (int) req.getAttribute("uid");
+        return dao.query(Pet.class,Cnd.where("uid","=",userId));
     }
 
 
