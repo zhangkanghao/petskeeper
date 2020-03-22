@@ -79,34 +79,34 @@ public class ArticleModule extends BaseModule{
 
     /**
      * 查询已经发布的
-     * @param userId
-     * @param pager
      * @return
      */
-    @At
-    public Object queryPost(@Param("userId")int userId,@Param("..") Pager pager){
-        Cnd cnd=Cnd.where("uid","=",userId).and("status","=","1");
-        QueryResult qr = new QueryResult();
-        qr.setList(dao.query(Article.class, cnd, pager));
-        pager.setRecordCount(dao.count(Article.class, cnd));
-        qr.setPager(pager);
-        //默认分页是第1页,每页20条
-        return qr;
+    @At("/mypost")
+    public Object queryPost(HttpServletRequest req){
+        NutMap re=new NutMap();
+        int userId= (int) req.getAttribute("uid");
+        //动态
+        List<Article> releases = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",1).and("type","=","动态"));
+        //动态
+        List<Article> articles = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",1).and("type","=","文章"));
+        //动态
+        List<Article> questions = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",1).and("type","=","问答"));
+        return re.setv("releases",releases).setv("articles",articles).setv("questions",questions);
     }
 
-    /**
-     *  查询草稿箱
-     */
-    @At
-    public Object querySave(@Param("userId")int userId,@Param("..") Pager pager){
-        Cnd cnd=Cnd.where("uid","=",userId).and("status","=","0");
-        QueryResult qr = new QueryResult();
-        qr.setList(dao.query(Article.class, cnd, pager));
-        pager.setRecordCount(dao.count(Article.class, cnd));
-        qr.setPager(pager);
-        //默认分页是第1页,每页20条
-        return qr;
+    @At("/mydraft")
+    public Object queryDraft(HttpServletRequest req,@Param("type")String type){
+        NutMap re=new NutMap();
+        int userId= (int) req.getAttribute("uid");
+        //动态
+        List<Article> releases = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",0).and("type","=","动态"));
+        //动态
+        List<Article> articles = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",0).and("type","=","文章"));
+        //动态
+        List<Article> questions = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",0).and("type","=","问答"));
+        return re.setv("releases",releases).setv("articles",articles).setv("questions",questions);
     }
+
 
 
     private SqlCallback getCallback(){
@@ -118,10 +118,13 @@ public class ArticleModule extends BaseModule{
                     JSONObject obj=new JSONObject();
                     obj.put("id",rs.getInt("id"));
                     obj.put("nickname",rs.getString("nickname"));
+                    obj.put("subject",rs.getString("subject"));
                     obj.put("content",rs.getString("content"));
                     obj.put("praise",rs.getInt("praise"));
                     obj.put("userId",rs.getInt("uid"));
-                    obj.put("targetId",rs.getInt("targetId"));
+                    obj.put("targetId",rs.getBoolean("targetId"));
+                    obj.put("type",rs.getString("type"));
+                    obj.put("annoymous",rs.getBoolean("annoymous"));
                     list.add(obj);
                 }
                 return list;
@@ -129,10 +132,23 @@ public class ArticleModule extends BaseModule{
         };
     }
 
+    @At("/appInfo")
+    public Object homepageSwiper(HttpServletRequest req){
+        NutMap re=new NutMap();
+        int userId= (int) req.getAttribute("uid");
+        List<Article> appInfos = dao.query(Article.class, Cnd.where("uid","=",userId).and("status","=",0).and("type","=","文章"));
+        //默认分页是第1页,每页20条
+        return appInfos;
+    }
+
     @At("/")
     public Object homepageArticle(HttpServletRequest req,@Param("..") Pager pager) {
+        NutMap re=new NutMap();
         int userId= (int) req.getAttribute("uid");
-        Sql sql= Sqls.create("SELECT a.id,a.uid,content,a.praise,up.nickname,targetId FROM t_article a LEFT JOIN t_user_profile up on a.uid=up.uid LEFT JOIN (SELECT * from t_praise where userId=@userId AND type=0) p ON p.targetId=a.id WHERE to_days(a.ut)=to_days(NOW()) and a.`status`=1 ORDER BY a.ut ASC");
+        Sql sql= Sqls.create("SELECT a.id,a.uid,a.type,a.subject,content,a.praise,annoymous,up.nickname,targetId FROM t_article a " +
+                "LEFT JOIN t_user_profile up on a.uid=up.uid " +
+                "LEFT JOIN (SELECT * from t_praise where userId=@userId AND type=0) p ON p.targetId=a.id " +
+                "WHERE to_days(a.ut)=to_days(NOW()) and a.`status`=1 AND a.uid>3 ORDER BY a.ut ASC");
         sql.setParam("userId",userId);
         pager.setRecordCount((int) Daos.queryCount(dao,sql));
         sql.setPager(pager);
@@ -142,7 +158,28 @@ public class ArticleModule extends BaseModule{
         dao.execute(sql);
         System.out.println(pager.getPageCount()+","+pager.getRecordCount());
         List<Record> articles = sql.getList(Record.class);
-        return articles;
+        return re.setv("articles",articles).setv("pager",pager);
+    }
+
+    @At("/myfollow")
+    public Object followActicle(HttpServletRequest req,@Param("..") Pager pager) {
+        NutMap re=new NutMap();
+        int userId= (int) req.getAttribute("uid");
+        Sql sql= Sqls.create("SELECT a.id,a.uid,a.type,a.subject,content,a.praise,annoymous,up.nickname,targetId FROM t_article a " +
+                "LEFT JOIN t_user_profile up on a.uid=up.uid " +
+                "LEFT JOIN (SELECT * from t_praise where userId=@userId AND type=0) p ON p.targetId=a.id " +
+                "WHERE to_days(a.ut)=to_days(NOW()) AND a.`status`=1 AND a.uid>3 " +
+                "AND a.uid IN (SELECT to_id from t_follow WHERE from_id =@userId) ORDER BY a.ut ASC");
+        sql.setParam("userId",userId);
+        pager.setRecordCount((int) Daos.queryCount(dao,sql));
+        sql.setPager(pager);
+        sql.setCallback(getCallback());
+        Entity<Record> entity = dao.getEntity(Record.class);
+        sql.setEntity(entity);
+        dao.execute(sql);
+        System.out.println(pager.getPageCount()+","+pager.getRecordCount());
+        List<Record> articles = sql.getList(Record.class);
+        return re.setv("articles",articles).setv("pager",pager);
     }
 
 
@@ -160,7 +197,6 @@ public class ArticleModule extends BaseModule{
         }else{
             try (InputStream ins = tf.getInputStream()) {
                 BufferedImage image = Images.read(ins);
-                image = Images.zoomScale(image, 512, 512, Color.WHITE);
                 String basepath=req.getServletContext().getRealPath("articleImg/release/");
                 File directory = new File(basepath);
                 if (!directory.exists()) {

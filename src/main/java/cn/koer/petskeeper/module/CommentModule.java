@@ -44,10 +44,10 @@ public class CommentModule extends BaseModule{
                 return new NutMap().setv("ok",false).setv("msg","评论对象不存在");
             }
         }else{
-            Article article=dao.fetch(Article.class,comment.getRoot());
-            if(article==null||"私密".equals(article.getReadType())||article.getStatus()==0){
-                return new NutMap().setv("ok",false).setv("msg","文章不存在或禁止评论");
-            }
+//            Article article=dao.fetch(Article.class,comment.getRoot());
+//            if(article==null||"私密".equals(article.getReadType())||article.getStatus()==0){
+//                return new NutMap().setv("ok",false).setv("msg","文章不存在或禁止评论");
+//            }
         }
         comment.setFrom(me);
         comment.setStatus(1);

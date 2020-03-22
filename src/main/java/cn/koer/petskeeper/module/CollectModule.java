@@ -28,9 +28,9 @@ public class CollectModule extends BaseModule{
     public Object add(@Attr(scope = Scope.SESSION,value = "ident")int userId,@Param("articleId") int articleId){
         Article article=dao.fetch(Article.class,articleId);
         //文章不存在或者是未发布或是私密状态
-        if(article==null||article.getStatus()==0|| "私密".equals(article.getReadType())){
-            return new NutMap().setv("ok",false).setv("msg","非法操作");
-        }
+//        if(article==null||article.getStatus()==0|| "私密".equals(article.getReadType())){
+//            return new NutMap().setv("ok",false).setv("msg","非法操作");
+//        }
         Collect collect=dao.fetch(Collect.class, Cnd.where("uid","=",userId).and("aid","=",articleId));
         //已经收藏了
         if(collect!=null){
@@ -71,11 +71,11 @@ public class CollectModule extends BaseModule{
         List<Article> list=dao.query(Article.class,Cnd.wrap("id in (select aid from t_collect where uid="+userId+" and status=1)"+"and type='"+type+"'"),pager);
         pager.setRecordCount(dao.count(Article.class,Cnd.wrap("id in (select aid from t_collect where uid="+userId+" and status=1"+"and type='"+type+"'")));
         for (Article article:list) {
-            if("私密".equals(article.getReadType())){
-                article.setSubject("私密文章");
-                article.setContent("该文章已被作者设置为私密……");
-                article.setStatus(-1);
-            }
+//            if("私密".equals(article.getReadType())){
+//                article.setSubject("私密文章");
+//                article.setContent("该文章已被作者设置为私密……");
+//                article.setStatus(-1);
+//            }
         }
         rs.setList(list);
         rs.setPager(pager);
