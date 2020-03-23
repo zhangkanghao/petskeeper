@@ -133,12 +133,13 @@ public class PetModule extends BaseModule {
     }
 
     @At
-    public Object delete(@Param("petId")int petId, @Attr(scope = Scope.SESSION,value = "ident")int me){
+    public Object delete(@Param("petId")int petId,HttpServletRequest req){
         NutMap re=new NutMap();
+        int userId= (int) req.getAttribute("uid");
         Pet pet=dao.fetch(Pet.class,petId);
         if(pet==null){
             return re.setv("ok",false).setv("msg","该宠物不存在");
-        }else if(pet.getUserId()!=me){
+        }else if(pet.getUserId()!=userId){
             return re.setv("ok",false).setv("msg","仅可以注销本人的宠物信息");
         }
         dao.delete(Pet.class,petId);
