@@ -16,6 +16,7 @@ import org.nutz.dao.sql.Sql;
 import org.nutz.dao.sql.SqlCallback;
 import org.nutz.dao.util.Daos;
 import org.nutz.ioc.loader.annotation.IocBean;
+import org.nutz.lang.Strings;
 import org.nutz.lang.util.NutMap;
 import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
@@ -53,10 +54,12 @@ public class FollowModule extends BaseModule {
                     JSONObject obj=new JSONObject();
                     obj.put("userId",rs.getInt("uid"));
                     obj.put("nickname",rs.getString("nickname"));
-                    obj.put("description",rs.getString("dt"));
-                    obj.put("praise",rs.getInt("praise"));
-                    obj.put("follower",rs.getInt("follower"));
-                    obj.put("id",rs.getInt("id"));
+                    String dt=rs.getString("dt");
+                    if(dt==null|| Strings.isBlank(dt)){
+                        dt="这个人很懒,什么也没留下...";
+                    }
+                    obj.put("description",dt);
+                    obj.put("id",rs.getBoolean("id"));
                     list.add(obj);
                 }
                 return list;
@@ -75,11 +78,11 @@ public class FollowModule extends BaseModule {
     }
 
     @At("/follower")
-    @Ok("jsp:jsp.user.FollowList")
-    public Object getFollower(@Param("userId") int userId,@Attr(scope = Scope.SESSION,value = "ident")int me) {
-        Sql sql= Sqls.create("select uid,nickname,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
+    public Object getFollower(@Param("userId") int userId,HttpServletRequest req) {
+        int myuserId= (int) req.getAttribute("uid");
+        Sql sql= Sqls.create("select uid,nickname,dt,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
                 "where uid in (select from_id from t_follow where to_id =@to_id)");
-        sql.setParam("ident_id",me);
+        sql.setParam("ident_id",myuserId);
         sql.setParam("to_id",userId);
         sql.setCallback(getCallback());
         Entity<Record> entity = dao.getEntity(Record.class);
@@ -91,11 +94,11 @@ public class FollowModule extends BaseModule {
     }
 
     @At("/following")
-    @Ok("jsp:jsp.user.FollowList")
-    public Object getFollowing(@Param("userId") int userId,@Attr(scope = Scope.SESSION,value = "ident")int me) {
-        Sql sql= Sqls.create("select uid,nickname,dt,praise,follower,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
+    public Object getFollowing(@Param("userId") int userId,HttpServletRequest req) {
+        int myuserId= (int) req.getAttribute("uid");
+        Sql sql= Sqls.create("select uid,nickname,dt,id from t_user_profile u left join  (select * from t_follow where from_id=@ident_id) b on u.uid=b.to_id " +
                 "where uid in (select to_id from t_follow where from_id =@from_id)");
-        sql.setParam("ident_id",me);
+        sql.setParam("ident_id",myuserId);
         sql.setParam("from_id",userId);
         sql.setCallback(getCallback());
         Entity<Record> entity = dao.getEntity(Record.class);
