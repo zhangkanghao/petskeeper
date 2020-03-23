@@ -6,6 +6,7 @@ import cn.koer.petskeeper.filter.CheckTokenFilter;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.nutz.dao.*;
+import org.nutz.dao.Chain;
 import org.nutz.dao.entity.Entity;
 import org.nutz.dao.entity.Record;
 import org.nutz.dao.pager.Pager;
@@ -46,6 +47,7 @@ public class ArticleModule extends BaseModule{
 
     @At
     public Object get(@Param("articleId")int articleId){
+        dao.update(Article.class, Chain.makeSpecial("visit","+1"), Cnd.where("id","=",articleId));
         return dao.fetch(Article.class,articleId);
     }
 
