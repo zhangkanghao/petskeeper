@@ -2,9 +2,12 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Article;
 import cn.koer.petskeeper.bean.Collect;
+import cn.koer.petskeeper.bean.Praise;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
+import org.nutz.dao.entity.annotation.ColDefine;
 import org.nutz.dao.pager.Pager;
 import org.nutz.ioc.loader.annotation.IocBean;
 import org.nutz.lang.util.NutMap;
@@ -12,6 +15,7 @@ import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.List;
 
@@ -21,32 +25,35 @@ import java.util.List;
  */
 @IocBean
 @At("/collect")
-@Filters(@By(type = CheckSession.class,args = {"ident","/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class CollectModule extends BaseModule{
 
     @At
-    public Object add(@Attr(scope = Scope.SESSION,value = "ident")int userId,@Param("articleId") int articleId){
-        Article article=dao.fetch(Article.class,articleId);
-        //文章不存在或者是未发布或是私密状态
-//        if(article==null||article.getStatus()==0|| "私密".equals(article.getReadType())){
-//            return new NutMap().setv("ok",false).setv("msg","非法操作");
-//        }
-        Collect collect=dao.fetch(Collect.class, Cnd.where("uid","=",userId).and("aid","=",articleId));
-        //已经收藏了
-        if(collect!=null){
-            if(collect.getStatus()==2) {
-                return new NutMap().setv("ok", false).setv("msg", "已经收藏该文章");
-            }else {
-                collect.setStatus(1);
-                collect.setUpdateTime(new Date());
-                dao.update(collect);
-                return new NutMap().setv("ok",true).setv("data",collect);
-            }
+    public Object get(HttpServletRequest req,@Param("articleId")int articleId){
+        int userId= (int) req.getAttribute("uid");
+        Collect collect=dao.fetch(Collect.class,Cnd.where("uid","=",userId).and("aid","=",articleId));
+        if(collect==null){
+            return new NutMap("ok",false);
         }
-        collect=new Collect();
+        return new NutMap().setv("ok",true);
+    }
+
+
+    @At
+    public Object add(HttpServletRequest req,@Param("articleId") int articleId){
+        int userId= (int) req.getAttribute("uid");
+        Article article=dao.fetch(Article.class,articleId);
+        Collect collect1=dao.fetch(Collect.class,Cnd.where("aid","=",articleId).and("uid","=",userId));
+        if(collect1!=null){
+            return new NutMap().setv("ok",false).setv("msg","已经点过赞了");
+        }
+        //文章不存在或者是未发布或是私密状态
+        if(article==null||!article.isStatus()|| !article.isReadType()){
+            return new NutMap().setv("ok",false).setv("msg","非法操作");
+        }
+        Collect collect=new Collect();
         collect.setUserId(userId);
         collect.setArticleId(articleId);
-        collect.setStatus(2);
         collect.setCreateTime(new Date());
         collect.setUpdateTime(new Date());
         dao.insert(collect);
@@ -54,14 +61,13 @@ public class CollectModule extends BaseModule{
     }
 
     @At
-    public Object remove(@Attr(scope = Scope.SESSION,value = "ident")int userId,@Param("articleId") int articleId){
+    public Object remove(HttpServletRequest req,@Param("articleId") int articleId){
+        int userId= (int) req.getAttribute("uid");
         Collect collect=dao.fetch(Collect.class, Cnd.where("uid","=",userId).and("aid","=",articleId));
         if(collect==null){
             return new NutMap().setv("ok",false).setv("msg","还没有收藏该文章呢！");
         }
-        collect.setStatus(0);
-        collect.setUpdateTime(new Date());
-        dao.update(collect);
+        dao.delete(collect);
         return new NutMap().setv("ok",true);
     }
 

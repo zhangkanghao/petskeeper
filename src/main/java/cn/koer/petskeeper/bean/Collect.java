@@ -21,10 +21,6 @@ public class Collect extends BasePojo {
     @Column("aid")
     private int articleId;
 
-    /**0取消收藏，2收藏*/
-    @Column
-    private int status;
-
     public int getId() {
         return id;
     }
@@ -49,11 +45,4 @@ public class Collect extends BasePojo {
         this.articleId = articleId;
     }
 
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
 }
