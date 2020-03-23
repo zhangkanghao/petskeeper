@@ -1,7 +1,10 @@
 package cn.koer.petskeeper.module;
 
+import cn.koer.petskeeper.bean.Collect;
 import cn.koer.petskeeper.bean.Follow;
+import cn.koer.petskeeper.bean.Praise;
 import cn.koer.petskeeper.bean.UserProfile;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import com.alibaba.fastjson.JSON;
 import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
@@ -29,6 +32,8 @@ import com.alibaba.fastjson.JSONObject;
 import org.nutz.trans.Atom;
 import org.nutz.trans.Trans;
 
+import javax.servlet.http.HttpServletRequest;
+
 
 /**
  * @Author Koer
@@ -36,7 +41,7 @@ import org.nutz.trans.Trans;
  */
 @At("/follow")
 @IocBean
-@Filters(@By(type = CheckSession.class, args = {"ident", "/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class FollowModule extends BaseModule {
 
     private SqlCallback getCallback(){
@@ -57,6 +62,16 @@ public class FollowModule extends BaseModule {
                 return list;
             }
         };
+    }
+
+    @At
+    public Object get(HttpServletRequest req, @Param("userId")int userId){
+        int myuserId= (int) req.getAttribute("uid");
+        Follow follow=dao.fetch(Follow.class,Cnd.where("from_id","=",myuserId).and("to_id","=",userId));
+        if(follow==null){
+            return new NutMap("ok",false);
+        }
+        return new NutMap().setv("ok",true);
     }
 
     @At("/follower")
@@ -91,12 +106,14 @@ public class FollowModule extends BaseModule {
     }
 
     @At
-    public Object add(@Param("userId") final int userId, @Attr(scope = Scope.SESSION, value = "ident") final int me) {
-        if(userId==0){
-            return new NutMap().setv("ok",false).setv("msg","空指针");
+    public Object add(@Param("userId") final int userId, HttpServletRequest req) {
+        final int myuserId= (int) req.getAttribute("uid");
+        Follow follow1=dao.fetch(Follow.class,Cnd.where("from_id","=",myuserId).and("to_id","=",userId));
+        if(follow1!=null){
+            return new NutMap().setv("ok",false).setv("msg","已经关注了");
         }
         final Follow follow=new Follow();
-        follow.setFrom(me);
+        follow.setFrom(myuserId);
         follow.setTo(userId);
         follow.setCreateTime(new Date());
         follow.setUpdateTime(new Date());
@@ -104,7 +121,7 @@ public class FollowModule extends BaseModule {
             @Override
             public void run() {
                 dao.insert(follow);
-                dao.update(UserProfile.class, Chain.makeSpecial("following","+1"),Cnd.where("uid","=",me));
+                dao.update(UserProfile.class, Chain.makeSpecial("following","+1"),Cnd.where("uid","=",myuserId));
                 dao.update(UserProfile.class, Chain.makeSpecial("follower","+1"),Cnd.where("uid","=",userId));
             }
         });
@@ -112,19 +129,18 @@ public class FollowModule extends BaseModule {
     }
 
     @At
-    public Object remove(@Param("followId")int followId, @Param("userId") final int userId, @Attr(scope = Scope.SESSION, value = "ident") final int me) {
+    public Object remove(@Param("userId") final int userId, HttpServletRequest req) {
         NutMap re = new NutMap();
-        final Follow follow = dao.fetch(Follow.class, followId);
+        final int myuserId= (int) req.getAttribute("uid");
+        final Follow follow = dao.fetch(Follow.class, Cnd.where("from_id","=",myuserId).and("to_id","=",userId));
         if (follow == null) {
             return re.setv("ok", false).setv("msg", "未关注用户");
-        } else if (follow.getFrom() != me) {
-            return re.setv("ok", false).setv("msg", "非法操作");
         }
         Trans.exec(new Atom() {
             @Override
             public void run() {
                 dao.delete(follow);
-                dao.update(UserProfile.class, Chain.makeSpecial("following","-1"),Cnd.where("uid","=",me));
+                dao.update(UserProfile.class, Chain.makeSpecial("following","-1"),Cnd.where("uid","=",myuserId));
                 dao.update(UserProfile.class, Chain.makeSpecial("follower","-1"),Cnd.where("uid","=",userId));
             }
         });

@@ -56,7 +56,7 @@ public class UserModule extends BaseModule {
         } else {
             String token=Toolkit.genToken(user.getId(),username,user.getSalt());
             redisService.set(token,String.valueOf(user.getId()));
-            return re.setv("ok", true).setv("auth",token);
+            return re.setv("ok", true).setv("auth",token).setv("userId",user.getId());
         }
     }
 
