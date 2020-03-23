@@ -2,8 +2,10 @@ package cn.koer.petskeeper.module;
 
 import cn.koer.petskeeper.bean.Article;
 import cn.koer.petskeeper.bean.Comment;
+import cn.koer.petskeeper.filter.CheckTokenFilter;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.QueryResult;
 import org.nutz.dao.Sqls;
@@ -20,6 +22,7 @@ import org.nutz.mvc.Scope;
 import org.nutz.mvc.annotation.*;
 import org.nutz.mvc.filter.CheckSession;
 
+import javax.servlet.http.HttpServletRequest;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,26 +36,20 @@ import java.util.List;
  */
 @IocBean
 @At("/comment")
-@Filters(@By(type = CheckSession.class,args = {"ident","/"}))
+@Filters(@By(type = CheckTokenFilter.class))
 public class CommentModule extends BaseModule{
 
     @At
-    public Object post(@Param("..")Comment comment, @Attr(scope = Scope.SESSION,value = "ident")int me){
-        if(comment.getType()){
-            Comment target=dao.fetch(Comment.class,comment.getRoot());
-            if(target==null||target.getStatus()==0){
-                return new NutMap().setv("ok",false).setv("msg","评论对象不存在");
-            }
-        }else{
-//            Article article=dao.fetch(Article.class,comment.getRoot());
-//            if(article==null||"私密".equals(article.getReadType())||article.getStatus()==0){
-//                return new NutMap().setv("ok",false).setv("msg","文章不存在或禁止评论");
-//            }
-        }
-        comment.setFrom(me);
-        comment.setStatus(1);
+    public Object add(@Param("..")Comment comment, HttpServletRequest req){
+        int userId= (int) req.getAttribute("uid");
+        comment.setFrom(userId);
         comment.setCreateTime(new Date());
         comment.setUpdateTime(new Date());
+        if(comment.getType()){
+            dao.update(Comment.class, Chain.makeSpecial("comment","+1"), Cnd.where("id","=",comment.getTo()));
+        }else{
+            dao.update(Article.class, Chain.makeSpecial("comment","+1"), Cnd.where("id","=",comment.getTo()));
+        }
         dao.insert(comment);
         return new NutMap().setv("ok",true).setv("data",comment);
     }
@@ -63,8 +60,9 @@ public class CommentModule extends BaseModule{
     }
 
     @At
-    public Object edit(@Param("..")Comment comment,@Attr(scope = Scope.SESSION,value = "ident")int me){
-        if(comment.getFrom()!=me){
+    public Object edit(@Param("..")Comment comment,HttpServletRequest req){
+        int userId= (int) req.getAttribute("uid");
+        if(comment.getFrom()!=userId){
             return new NutMap().setv("ok",false).setv("msg","非法操作");
         }
         comment.setUpdateTime(new Date());
@@ -73,17 +71,16 @@ public class CommentModule extends BaseModule{
     }
 
     @At
-    public Object remove(@Param("..")Comment comment,@Attr(scope = Scope.SESSION,value = "ident")int me){
-        if(comment.getFrom()!=me){
+    public Object remove(@Param("..")Comment comment,HttpServletRequest req){
+        int userId= (int) req.getAttribute("uid");
+        if(comment.getFrom()!=userId){
             return new NutMap().setv("ok",false).setv("msg","非法操作");
         }
-        comment.setStatus(0);
-        comment.setUpdateTime(new Date());
-        dao.update(comment);
+        dao.delete(comment);
         return new NutMap().setv("ok",true);
     }
 
-    private SqlCallback getCallback(){
+    private SqlCallback getCallbackA(){
         return new SqlCallback() {
             @Override
             public Object invoke(Connection conn, ResultSet rs, Sql sql) throws SQLException {
@@ -91,14 +88,15 @@ public class CommentModule extends BaseModule{
                 while(rs.next()){
                     JSONObject obj=new JSONObject();
                     obj.put("id",rs.getInt("id"));
-                    obj.put("type",rs.getInt("type"));
-                    obj.put("root",rs.getInt("root"));
+                    obj.put("type",rs.getBoolean("type"));
                     obj.put("from",rs.getInt("from_id"));
-                    obj.put("to",rs.getInt("tp_id"));
+                    obj.put("to",rs.getInt("to_id"));
                     obj.put("content",rs.getString("content"));
                     obj.put("praise",rs.getInt("praise"));
                     obj.put("comment",rs.getInt("comment"));
                     obj.put("nickname",rs.getString("nickname"));
+                    obj.put("targetId",rs.getBoolean("targetId"));
+                    obj.put("date",rs.getDate("ut"));
                     list.add(obj);
                 }
                 return list;
@@ -108,32 +106,52 @@ public class CommentModule extends BaseModule{
 
     @At("/commentOfA")
     public Object queryByArticle(@Param("articleId")int aid, @Param("..")Pager pager){
-        String s="SELECT id,type,root,from_id,to_id,content,t.praise,comment,nickname from t_comment t LEFT JOIN t_user_profile u ON t.from_id=u.uid where type=0 AND root=@article_id AND STATUS=1";
+        NutMap re=new NutMap();
+        String s="SELECT id,type,from_id,to_id,content,t.praise,comment,nickname,a.targetId,t.ut from t_comment t " +
+                "LEFT JOIN t_user_profile u ON t.from_id=u.uid " +
+                "LEFT JOIN (SELECT targetId from t_praise WHERE userId = 4 AND type=1) a on t.id=a.targetId " +
+                "where type=0 AND to_id =10 ORDER BY t.praise DESC";
         Sql sql= Sqls.create(s);
         sql.setParam("article_id",aid);
         pager.setRecordCount((int) Daos.queryCount(dao,s));
         sql.setPager(pager);
-        sql.setCallback(getCallback());
+        sql.setCallback(getCallbackA());
         Entity<Record> entity = dao.getEntity(Record.class);
         sql.setEntity(entity);
         dao.execute(sql);
         List<Record> comments = sql.getList(Record.class);
-        return JSON.toJSON(comments);
+        return re.setv("comments",comments).setv("pager",pager);
     }
 
     @At("/commentOfC")
     public Object queryByComment(@Param("commentId")int cid, @Param("..")Pager pager){
-        String s="SELECT id,type,root,from_id,to_id,content,t.praise,comment,nickname from t_comment t LEFT JOIN t_user_profile u ON t.from_id=u.uid where type=1 AND root=@comment_id AND STATUS=1";
+        NutMap re=new NutMap();
+        String s="SELECT id,from_id,to_id,content,nickname from t_comment t LEFT JOIN t_user_profile u ON t.from_id=u.uid where type=1 AND to_id=@commentId";
         Sql sql= Sqls.create(s);
-        sql.setParam("comment_id",cid);
+        sql.setParam("commentId",cid);
         pager.setRecordCount((int) Daos.queryCount(dao,s));
         sql.setPager(pager);
-        sql.setCallback(getCallback());
+        sql.setCallback(new SqlCallback() {
+            @Override
+            public Object invoke(Connection connection, ResultSet rs, Sql sql) throws SQLException {
+                List<JSONObject> list= new ArrayList<>();
+                while(rs.next()){
+                    JSONObject obj=new JSONObject();
+                    obj.put("id",rs.getInt("id"));
+                    obj.put("from",rs.getInt("from_id"));
+                    obj.put("to",rs.getInt("to_id"));
+                    obj.put("content",rs.getString("content"));
+                    obj.put("nickname",rs.getString("nickname"));
+                    list.add(obj);
+                }
+                return list;
+            }
+        });
         Entity<Record> entity = dao.getEntity(Record.class);
         sql.setEntity(entity);
         dao.execute(sql);
         List<Record> comments = sql.getList(Record.class);
-        return JSON.toJSON(comments);
+        return re.setv("replys",comments).setv("pager",pager);
 
     }
 

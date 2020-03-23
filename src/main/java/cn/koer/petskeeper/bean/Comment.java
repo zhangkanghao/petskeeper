@@ -22,14 +22,10 @@ public class Comment extends BasePojo{
     @Default("false")
     private boolean type;
 
-    /**回复的文章id或者是评论id*/
-    @Column
-    private int root;
-
     @Column("from_id")
     private int from;
 
-    /**评论对象用户的id*/
+    /**回复的文章id或者是评论id*/
     @Column("to_id")
     private int to;
 
@@ -43,10 +39,6 @@ public class Comment extends BasePojo{
     @Column
     @Default("0")
     private int comment;
-
-    @Column
-    private int status;
-
 
     public int getId() {
         return id;
@@ -62,14 +54,6 @@ public class Comment extends BasePojo{
 
     public void setType(boolean type) {
         this.type = type;
-    }
-
-    public int getRoot() {
-        return root;
-    }
-
-    public void setRoot(int root) {
-        this.root = root;
     }
 
     public int getFrom() {
@@ -112,11 +96,4 @@ public class Comment extends BasePojo{
         this.comment = comment;
     }
 
-    public int getStatus() {
-        return status;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
 }
