@@ -110,7 +110,7 @@ public class CommentModule extends BaseModule{
         String s="SELECT id,type,from_id,to_id,content,t.praise,comment,nickname,a.targetId,t.ut from t_comment t " +
                 "LEFT JOIN t_user_profile u ON t.from_id=u.uid " +
                 "LEFT JOIN (SELECT targetId from t_praise WHERE userId = 4 AND type=1) a on t.id=a.targetId " +
-                "where type=0 AND to_id =10 ORDER BY t.praise DESC";
+                "where type=0 AND to_id =@article_id ORDER BY t.praise DESC";
         Sql sql= Sqls.create(s);
         sql.setParam("article_id",aid);
         pager.setRecordCount((int) Daos.queryCount(dao,s));
